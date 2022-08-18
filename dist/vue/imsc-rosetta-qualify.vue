@@ -62,20 +62,20 @@
         logs: '',
         tab: 'Qualify',
         Renderclass:'',
-        Qualifyclass:'',
+        Qualifyclass:'active', // default to this tab
         Aboutclass:'',
         xmlfilename: 'none',
       }
     },
     methods:{
-        open(evt, name) {
-            console.log('select tab '+name);
-            this.tab = name;
-            this.Qualifyclass = '';
-            this.Renderclass = '';
-            this.Aboutclass = '';
-            this[name+'class'] = 'active';
-        },       
+      open(evt, name) {
+          console.log('select tab '+name);
+          this.tab = name;
+          this.Qualifyclass = '';
+          this.Renderclass = '';
+          this.Aboutclass = '';
+          this[name+'class'] = 'active';
+      },       
 
       mountedQualify( name, ptr ) {
         console.log('mountedQualify ', name, ptr);

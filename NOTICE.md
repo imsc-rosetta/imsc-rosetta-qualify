@@ -1,8 +1,8 @@
-# Copyright Simon Hailes, (Yella BVBA)[https://yellaumbrella.tv]
+# Copyright Simon Hailes, [Yella BVBA](https://yellaumbrella.tv)
 
-Provided under the (Apache-2.0)[https://www.apache.org/licenses/LICENSE-2.0] license, text below
+Provided under the [Apache-2.0](https://www.apache.org/licenses/LICENSE-2.0) license, text below
 
-(Yella Umbrella)[https://yellaumbrella.tv] provides software and expertise to the subtitling/audio description and dubbing industry.  In support of this industry and with the collaboration of Warner Discovery, IMSC-Rosetta represents a step towards a normalisation of TTML usage, and recognition of the requirements for quality translation subtitles.  IMSC-Rosetta actually represents more than 30 years of experience, distilled into an open and usable subtitle format, and we hope that it helps the industry in general raise the quality of subtitle presentation across the board.
+[Yella Umbrella](https://yellaumbrella.tv) provides software and expertise to the subtitling/audio description and dubbing industry.  In support of this industry and with the collaboration of Warner Discovery, IMSC-Rosetta represents a step towards a normalisation of TTML usage, and recognition of the requirements for quality translation subtitles.  IMSC-Rosetta actually represents more than 30 years of experience, distilled into an open and usable subtitle format, and we hope that it helps the industry in general raise the quality of subtitle presentation across the board.
 
 
 

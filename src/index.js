@@ -1,5 +1,6 @@
 window.xml2js = require('xml2js');
 window.xmlbuilder = require('xmlbuilder');
+window.imsc = require('imsc');
 
 let rootparts = window.location.href.split('/');
 rootparts.pop();

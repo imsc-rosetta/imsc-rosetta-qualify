@@ -15,7 +15,7 @@
     "rosetta",
     "webpack"
   ],
-  "author": "Simon Hailes",
+  "author": "Simon Hailes, Yella BVBA",
   "license": "Apache-2.0",
   "dependencies": {
     "buffer": "^6.0.3",

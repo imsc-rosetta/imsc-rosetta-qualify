@@ -8,6 +8,38 @@ Open https://imsc-rosetta.github.io/imsc-rosetta-qualify/ in a web browser (e.g.
 
 Drop a file into the blue box to check the XML structure, round trip of the file through XML parsing to XML building, and select the Render tab to see the render of the file along with a display of each div.
 
+# Tests
+
+imsc-rosetta-qualify performs the following tests:
+
+ - report basic XML parsing errors from two parses.
+ - check for extraneous whitespace inside P or parent of nested span.
+ - check namespace prefixes and namespace presence.
+ - check the IMSC-Rosetta element location rules.
+ - check the IMSC-Rosetta attribute rules.
+ - check style name legality
+ - check fixed style content
+ - check changeable style content
+ - check style usage and present/absence
+ - check region usage and present/absence
+ - check region definitions according to IMSC-Rosetta region placement rules.
+ - check region definitions according to IMSC-Rosetta line quantisation rules.
+ - check for text direct in P or in parent of nested span.
+ - check nested spans are only used for Ruby
+ - check xml:id uniqueness
+ - check begin and end are in the form HH:MM:SS.TTT
+ - check begin is increasing in div order where present
+
+ - warn if begin or end are missing
+ - warn on unused styles
+ - warn on unused regions
+
+ - report foreign metadata
+
+# Render/display
+
+Select the Render tab once you have dropped a file to see how the subtitles should be presented.
+
 # Development
 
 Checkout the repo, and use 

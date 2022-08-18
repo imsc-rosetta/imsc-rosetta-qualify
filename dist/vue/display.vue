@@ -1062,6 +1062,25 @@ module.exports = {
       return html;
     },
 
+    checkTime(b){
+      if (b.length !== 12) return undefined;
+      let times = b.split(":");
+      if (times.length !== 3) return undefined;
+      if (times[0].length !== 2) return undefined;
+      let hours = +times[0];
+      if (isNaN(hours)) return undefined;
+      if (times[1].length !== 2) return undefined;
+      let mins = +times[1];
+      if (isNaN(mins)) return undefined;
+      if (times[2].length !== 6) return undefined;
+      let spl = times[2].split('.');
+      if (spl[0].length !== 2) return undefined;
+      let secs = +times[2];
+      if (isNaN(secs)) return undefined;
+      let t = hours * 60 * 60 + mins * 60 + secs;
+      return t;
+    }, 
+
     testImscRosetta(file, xml, json) {
       let resultsel = document.getElementById("results");
 
@@ -1234,6 +1253,7 @@ module.exports = {
         }
 
         {
+          let lastBegin = 0;
           if (!json.tt.body || json.tt.body.length !== 1) {
             html += '<p class="error">No tt.body element</p>';
             break;
@@ -1274,10 +1294,30 @@ module.exports = {
                 xmlids.push(id);
               }
 
+              let begin;
+              let end;
               if (!a.begin)
                 html += `<p class="warn">missing begin on div ${id}</p>`;
+              else {
+                begin = this.checkTime(a.begin);
+                if (isNaN(begin))
+                  html += `<p class="warn">begin ${a.begin} not NN:NN:NN.NNN on div ${id}</p>`;
+                else {
+                  if (begin < lastBegin)
+                    html += `<p class="warn">begin ${a.begin} less than previous on div ${id}</p>`;
+                  lastBegin = begin;
+                }
+              }
               if (!a.end)
                 html += `<p class="warn">missing end on div ${id}</p>`;
+              else {
+                end = this.checkTime(a.end);
+                if (isNaN(end))
+                  html += `<p class="warn">end ${a.end} not NN:NN:NN.NNN on div ${id}</p>`;
+                else 
+                  if (end < begin)
+                    html += `<p class="warn">end ${a.end} less than begin ${a.begin} on div ${id}</p>`;
+              }
               if (!a.region)
                 html += `<p class="error">missing region on div ${id}</p>`;
               else {

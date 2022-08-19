@@ -17,11 +17,10 @@
 
 <template>
   <div>
-    <div class="render" id="render-div"></div>
+    <div class="render" :id="renderId"></div>
     <p>ISDs generated: {{ tmax }}</p>
     <div>
-      <span>{{ selectedTime }} </span
-      ><input type="range" min="0" v-bind:max="tmax" v-model="timeindex" />
+      <span>{{ selectedTime }} </span><span>Rendered using: {{imscVersion}}</span><input type="range" min="0" v-bind:max="tmax" v-model="timeindex" />
     </div>
     <div class="xml"><pre v-html="xmlDisplay"></pre></div>
   </div>
@@ -35,13 +34,15 @@ module.exports = {
       timeindex: 0,
       xmlDisplay: "none",
       selectedTime: "xx:xx:xx:xxx",
+      renderId:'render',
+      imscVersion: 'https://unpkg.com/imsc@1.1.0-beta.2/build/umd/imsc.all.min.js',
     };
   },
   watch: {
     timeindex(newt, oldt) {
-      this.vdiv = document.getElementById("render-div");
+      this.vdiv = document.getElementById(this.renderId);
       if (this.vdiv) {
-        let isd = window.imsc.generateISD(this.doc, this.t[newt]);
+        let isd = this.imsc.generateISD(this.doc, this.t[newt]);
         if (isd.contents.length) {
           for (let i = 0; i < this.intimes.length; i++) {
             if (this.intimes[i] >= this.t[newt]) {
@@ -56,7 +57,7 @@ module.exports = {
         this.vdiv.innerHTML = "";
         //(isd, element, imgResolver, eheight, ewidth, displayForcedOnlyMode, errorHandler, previousISDState, enableRollUp)
         // force size as our div is not on screen for first render
-        window.imsc.renderHTML(isd, this.vdiv, null, 480, 854);
+        this.imsc.renderHTML(isd, this.vdiv, null, 480, 854);
       } else {
         setTimeout(() => {
           this.timeindex = oldt;
@@ -66,6 +67,12 @@ module.exports = {
     },
   },
   methods: {
+    init(options){
+      this.imsc = options.imsc;
+      this.renderId = options.name+'-div';
+      this.imscVersion = options.version;
+    },
+
     toHtmlEntities(txt) {
       return txt.replace(/./gm, (s) => {
         return s.match(/[a-z0-9\s]+/i) ? s : "&#" + s.charCodeAt(0) + ";";
@@ -81,20 +88,18 @@ module.exports = {
     },
 
     // defer processing until the DOM is populated
-    processXml(file, xml) {
+/*    processXml(file, xml) {
       this.$nextTick(function () {
         this.processXmlReal(file, xml);
       });
-    },
+    },*/
 
-    processXmlReal(file, xml) {
+    processXml(file, xml) {
       //console.log("would render");
       this.getDivs(xml);
-      this.doc = window.imsc.fromXML(xml);
+      this.doc = this.imsc.fromXML(xml);
       this.t = this.doc.getMediaTimeEvents();
-      let isd = window.imsc.generateISD(this.doc, this.t[1]);
       this.tmax = this.t.length - 1;
-
       this.timeindex = 0;
       this.timeindex = 1;
       //this.vdiv.innerHTML = '';

@@ -17,7 +17,15 @@
 
 window.xml2js = require('xml2js');
 window.xmlbuilder = require('xmlbuilder');
+window.imscmod = require('imscmod');
 window.imsc = require('imsc');
+
+let imscmodPackage = require('imscmod/package.json');
+window.imscmodVersion = imscmodPackage._from;
+console.log(window.imscmodVersion);
+
+let imscPackage = require('imsc/package.json');
+window.imscVersion = imscPackage._from;
 
 let rootparts = window.location.href.split('/');
 rootparts.pop();

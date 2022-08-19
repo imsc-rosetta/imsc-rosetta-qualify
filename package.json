@@ -19,7 +19,8 @@
   "license": "Apache-2.0",
   "dependencies": {
     "buffer": "^6.0.3",
-    "imsc": "file:imsc-1.1.3-sh.tgz",
+    "imscmod": "file:imsc-1.1.3-sh.tgz",
+    "imsc": "^1.1.3",
     "stream-browserify": "^3.0.0",
     "timers-browserify": "^2.0.12",
     "xml2js": "^0.4.23"

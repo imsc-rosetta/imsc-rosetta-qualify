@@ -38,7 +38,13 @@
         :class="'tablinks ' + Renderclass"
         @click="open($event, 'Render')"
       >
-        Render File
+        Legacy Render File
+      </button>
+      <button
+        :class="'tablinks ' + RenderPatchedclass"
+        @click="open($event, 'RenderPatched')"
+      >
+        Patched Render File
       </button>
       <button :class="'tablinks ' + Aboutclass" @click="open($event, 'About')">
         About
@@ -52,6 +58,10 @@
 
     <div class="tabcontent" :style="tab === 'Render' ? null : 'display:none;'">
       <render-controller @mounted="mountedRender"></render-controller>
+    </div>
+
+    <div class="tabcontent" :style="tab === 'RenderPatched' ? null : 'display:none;'">
+      <render-controller @mounted="mountedRenderPatched"></render-controller>
     </div>
 
     <div class="tabcontent" v-if="tab === 'About'">
@@ -108,6 +118,7 @@ module.exports = {
       logs: "",
       tab: "Qualify",
       Renderclass: "",
+      RenderPatchedclass: "",
       Qualifyclass: "active", // default to this tab
       Aboutclass: "",
       xmlfilename: "none",
@@ -118,6 +129,7 @@ module.exports = {
       console.log("select tab " + name);
       this.tab = name;
       this.Qualifyclass = "";
+      this.RenderPatchedclass = "";
       this.Renderclass = "";
       this.Aboutclass = "";
       this[name + "class"] = "active";
@@ -138,11 +150,25 @@ module.exports = {
     mountedRender(name, ptr) {
       //console.log('mountedRender ', name, ptr);
       if (ptr.init) {
-        ptr.init(this.appScope);
+        ptr.init({imsc: window.imsc, version: window.imscVersion, name:'render'});
         // if it returns a name, then add this 'class' to our this.
       }
       if (name) {
+        // creates this.render
         this[name] = ptr;
+        //console.log('added child \'class\' '+name);
+      }
+    },
+
+    mountedRenderPatched(name, ptr) {
+      //console.log('mountedRender ', name, ptr);
+      if (ptr.init) {
+        ptr.init({imsc: window.imscmod, version: window.imscmodVersion, name:'renderPatched'});
+        // if it returns a name, then add this 'class' to our this.
+      }
+      if (name) {
+        // creates this.renderPatched
+        this[name+'Patched'] = ptr;
         //console.log('added child \'class\' '+name);
       }
     },
@@ -165,10 +191,18 @@ module.exports = {
                 this.xmlfilename = `${file.name} - ${event.target.result.length} characters`;
                 this.qualify.processXml(file, event.target.result);
               }
+              // uses https://unpkg.com/imsc@1.1.0-beta.2/build/umd/imsc.all.min.js
               if (this.render && this.render.processXml) {
                 this.xmlfilename = `${file.name} - ${event.target.result.length} characters`;
                 this.render.processXml(file, event.target.result);
               }
+              // uses https://github.com/YellaUmbrella-tv/imscJS/tree/tempmaster
+              // fixes boxing and rubies.
+              if (this.renderPatched && this.renderPatched.processXml) {
+                this.xmlfilename = `${file.name} - ${event.target.result.length} characters`;
+                this.renderPatched.processXml(file, event.target.result);
+              }
+              
             };
             //console.log(file);
             reader.readAsText(file);
@@ -186,9 +220,16 @@ module.exports = {
               this.xmlfilename = `${file.name} - ${event.target.result.length} characters`;
               this.qualify.processXml(file, event.target.result);
             }
+            // uses https://unpkg.com/imsc@1.1.0-beta.2/build/umd/imsc.all.min.js
+            // fixes boxing and rubies.
             if (this.render && this.render.processXml) {
               this.xmlfilename = `${file.name} - ${event.target.result.length} characters`;
               this.render.processXml(file, event.target.result);
+            }
+            // uses https://github.com/YellaUmbrella-tv/imscJS/tree/tempmaster
+            if (this.renderPatched && this.renderPatched.processXml) {
+              this.xmlfilename = `${file.name} - ${event.target.result.length} characters`;
+              this.renderPatched.processXml(file, event.target.result);
             }
           };
           //console.log(file);

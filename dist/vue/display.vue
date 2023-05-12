@@ -66,7 +66,7 @@ module.exports = {
           "tts:showBackground": "whenActive",
           "tts:fontStyle": "normal",
           "tts:fontWeight": "normal",
-          "tts:color": "white",
+          //"tts:color": "white",
           "tts:fontFamily": "proportionalSansSerif",
           "tts:textAlign": "center",
           style: "_r_default",
@@ -248,6 +248,10 @@ module.exports = {
         s_fg_magenta: {
           "xml:id": "s_fg_magenta",
           "tts:color": "#FF00FF",
+        },
+        s_fg_white: {
+          "xml:id": "s_fg_white",
+          "tts:color": "#FFFFFF",
         },
 
         s_outlineblack: {
@@ -450,6 +454,7 @@ module.exports = {
           "tts:lineHeight": { required: true, default: "125%" },
           "ebutts:linePadding": { required: false, default: "0.25c" },
           "itts:fillLineGap": { required: false, default: "false" },
+          style: { required: true, default: "s_fg_white" },
           _always: true,
         },
       },
@@ -463,6 +468,7 @@ module.exports = {
         "tts:lineHeight": "125%",
         "ebutts:linePadding": "0.25c",
         "itts:fillLineGap": "false",
+        "style":"s_fg_white"
       },
 
       attributes: {

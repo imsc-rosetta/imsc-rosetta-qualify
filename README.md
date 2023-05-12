@@ -9,6 +9,12 @@ Open https://imsc-rosetta.github.io/imsc-rosetta-qualify/ in a web browser (e.g.
 
 Drop a file into the blue box to check the XML structure, round trip of the file through XML parsing to XML building, and select the Render tab to see the render of the file along with a display of each div.
 
+# Mod Record
+
+## 2023-05-12
+
+Updated to reflect changes for default colour in _r_region.
+
 # Tests
 
 

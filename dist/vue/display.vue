@@ -973,16 +973,22 @@ module.exports = {
       style = style || "";
       let s = style.split(" ");
       let valid = true;
+      let invalid = '';
       for (let i = 0; i < s.length; i++) {
-        if (!styles[s[i]]) valid = false;
-        else {
+        if (!styles[s[i]]) {
+          valid = false;
+          if (invalid) invalid += ',';
+          invalid += s[i];
+        } else {
           styles[s[i]]._use = (styles[s[i]]._use || 0) + 1;
           if (styles[s[i]].style) {
-            valid = this.checkstyle(styles, styles[s[i]].style);
+            let childinvalid = this.checkstyle(styles, styles[s[i]].style);
+            if (invalid && childinvalid) invalid += ',';
+            invalid += childinvalid;
           }
         }
       }
-      return valid;
+      return invalid;
     },
 
     checkAttributes(type, attrs) {
@@ -1199,9 +1205,10 @@ module.exports = {
             let stylenames = Object.keys(styles);
             for (let i = 0; i < stylenames.length; i++) {
               if (styles[stylenames[i]].style) {
-                if (!this.checkstyle(styles, styles[stylenames[i]].style))
+                let invalid = this.checkstyle(styles, styles[stylenames[i]].style);
+                if (invalid)
                   html += `<p class="error">unknown style (${
-                    styles[stylenames[i]].style
+                    invalid
                   })on style ${stylenames[i]}</p>`;
               }
             }
@@ -1245,8 +1252,9 @@ module.exports = {
 
                     xmlids.push(a["xml:id"]);
                     if (a.style) {
-                      if (!this.checkstyle(styles, a.style))
-                        html += `<p class="error">unknown style (${a.style})on region ${a["xml:id"]}</p>`;
+                      let invalid = this.checkstyle(styles, a.style);
+                      if (invalid)
+                        html += `<p class="error">unknown style (${invalid})on region ${a["xml:id"]}</p>`;
                     }
                   }
                 }
@@ -1336,8 +1344,9 @@ module.exports = {
               if (!a.style)
                 html += `<p class="warn">missing style on div ${id}</p>`;
               else {
-                if (!this.checkstyle(styles, a.style))
-                  html += `<p class="error">unknown style (${a.style})on div ${id}</p>`;
+                let invalid = this.checkstyle(styles, a.style);
+                if (invalid)
+                  html += `<p class="error">unknown style (${invalid})on div ${id}</p>`;
               }
 
               if (!d.p || !d.p.length) {
@@ -1354,8 +1363,9 @@ module.exports = {
                   if (!pa.style)
                     html += `<p class="error">missing style on p in div ${id}</p>`;
                   else {
-                    if (!this.checkstyle(styles, pa.style))
-                      html += `<p class="error">unknown style (${pa.style}) on p in div ${id}</p>`;
+                    let invalid = this.checkstyle(styles, pa.style);
+                    if (invalid)
+                      html += `<p class="error">unknown style (${invalid}) on p in div ${id}</p>`;
                   }
                 }
                 if (undefined !== p._)
@@ -1376,8 +1386,9 @@ module.exports = {
                       if (!as1.style)
                         html += `<p class="error">empty style in span on div ${id}</p>`;
                       else {
-                        if (!this.checkstyle(styles, as1.style))
-                          html += `<p class="error">unknown style (${as1.style}) in span on div ${id}</p>`;
+                        let invalid = this.checkstyle(styles, as1.style);
+                        if (invalid)
+                          html += `<p class="error">unknown style (${invalid}) on span in div ${id}</p>`;
                       }
                     }
 
@@ -1433,9 +1444,9 @@ module.exports = {
                         }
                         if (!hasruby)
                           html += `<p class="error">nested ruby span should be s_rb_b or s_rb_t on div ${id}</p>`;
-                        if (!this.checkstyle(styles, as2.style))
-                          html += `<p class="error">unknown style (${as2.style}) in span on div ${id}</p>`;
-
+                        let invalid = this.checkstyle(styles, as2.style);
+                        if (invalid)
+                          html += `<p class="error">unknown style (${invalid}) on span in div ${id}</p>`;
                         if (sp2.span) {
                           html += `<p class="error">double nested span in div ${id}</p>`;
                         }

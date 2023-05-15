@@ -417,6 +417,12 @@ module.exports = {
         },
       },
 
+      canChangeStyleAttribute:{
+        "tts:textOutline": true,
+        "tts:color": true,
+        "tts:backgroundColor": true,
+      },
+
       // these styles can be changed...
       // items which are true are required to be present.
       // items which are false are optional.
@@ -827,7 +833,7 @@ module.exports = {
       return html;
     },
 
-    processXml(file, xml) {
+    async processXml(file, xml) {
       this.clear();
 
       this.output = "";
@@ -854,63 +860,62 @@ module.exports = {
 
       this.timestart();
       this.output += this.timestamp("Start FullParse");
-      this.xml2js
-        .parseStringPromise(xml, parseOptionsFull)
-        .then((result) => {
-          this.output += this.timestamp("End FullParse");
 
-          //console.log("DoneFull:");
-          //console.dir(result);
-          // use full parse to check for extra space in p
-          this.output += this.timestamp("Start Spaces Check");
-          this.testImscRosettaSpaces(file, xml, result);
-          this.output += this.timestamp("End Spaces Check");
-          let json = JSON.stringify(result, null, " ");
-          let jsonel = document.getElementById("jsonfull");
-          jsonel.innerHTML = `<pre>${this.toHtmlEntities(json)}</pre>`;
+      try {
+        let result = await this.xml2js.parseStringPromise(xml, parseOptionsFull);
+        this.output += this.timestamp("End FullParse");
 
-          this.timestart();
-          this.output += this.timestamp("Start SimpleParse");
-          this.xml2js
-            .parseStringPromise(xml, parseOptionsSimple)
-            .then((result) => {
-              this.output += this.timestamp("End SimpleParse");
-              //console.log("DoneSimple:");
-              //console.dir(result);
+        //console.log("DoneFull:");
+        //console.dir(result);
+        // use full parse to check for extra space in p
+        this.output += this.timestamp("Start Spaces Check");
+        this.testImscRosettaSpaces(file, xml, result);
+        this.output += this.timestamp("End Spaces Check");
+        let json = JSON.stringify(result, null, " ");
+        let jsonel = document.getElementById("jsonfull");
+        jsonel.innerHTML = `<pre>${this.toHtmlEntities(json)}</pre>`;
+      } catch(err){
+        // Failed
+        let resultsel = document.getElementById("results");
+        resultsel.innerHTML =
+          resultsel.innerHTML +
+          `<p class="error">Error in Full Parsing: ${err.toString()}</p>`;
+        console.error(err);
+      }
 
-              let jsonel = document.getElementById("json");
-              let json = JSON.stringify(result, null, " ");
-              jsonel.innerHTML = `<pre>${this.toHtmlEntities(json)}</pre>`;
-              this.timestart();
-              this.output += this.timestamp("Start Test");
-              this.testImscRosetta(file, xml, result);
-              this.output += this.timestamp("End Test");
+      this.timestart();
+      this.output += this.timestamp("Start SimpleParse");
 
-              // round trip back to XML
-              this.timestart();
-              this.output += this.timestamp("Start Export");
-              this.processJson(file, result);
-              this.output += this.timestamp("End Export");
-              let resultsel = document.getElementById("results");
-              resultsel.innerHTML = resultsel.innerHTML + this.output;
-            })
-            .catch((err) => {
-              // Failed
-              let resultsel = document.getElementById("results");
-              resultsel.innerHTML =
-                resultsel.innerHTML +
-                `<p class="error">Error in Simple Parsing: ${err.toString()}</p>`;
-              console.error(err);
-            });
-        })
-        .catch((err) => {
-          // Failed
-          let resultsel = document.getElementById("results");
-          resultsel.innerHTML =
-            resultsel.innerHTML +
-            `<p class="error">Error in Full Parsing: ${err.toString()}</p>`;
-          console.error(err);
-        });
+      try {
+        let result = await this.xml2js.parseStringPromise(xml, parseOptionsSimple);
+        this.output += this.timestamp("End SimpleParse");
+        //console.log("DoneSimple:");
+        //console.dir(result);
+
+        let jsonel = document.getElementById("json");
+        this.timestart();
+        this.output += this.timestamp("Start Test");
+        this.testImscRosetta(file, xml, result);
+        this.output += this.timestamp("End Test");
+
+        let json = JSON.stringify(result, null, " ");
+        jsonel.innerHTML = `<pre>${this.toHtmlEntities(json)}</pre>`;
+
+        // round trip back to XML
+        this.timestart();
+        this.output += this.timestamp("Start Export");
+        this.processJson(file, result);
+        this.output += this.timestamp("End Export");
+        let resultsel = document.getElementById("results");
+        resultsel.innerHTML = resultsel.innerHTML + this.output;
+      } catch(err){
+        // Failed
+        let resultsel = document.getElementById("results");
+        resultsel.innerHTML =
+          resultsel.innerHTML +
+          `<p class="error">Error in Simple Parsing: ${err.toString()}</p>`;
+        console.error(err);
+      }
     },
 
     processJson(file, json) {
@@ -1046,6 +1051,10 @@ module.exports = {
       }
 
       for (let i = 0; i < nodes.length; i++) {
+        // parser bug in xml2js
+        if (typeof nodes[i] === 'string'){
+          nodes[i] = {'_':nodes[i]};
+        }
         let node = nodes[i];
         let childnames = Object.keys(node);
 
@@ -1500,12 +1509,14 @@ module.exports = {
                   keys2[i]
                 }="${this.defaultConstantStyles[n][keys2[i]]}"</p>`;
               } else {
-                if (this.defaultConstantStyles[n][keys2[i]] !== s[keys2[i]]) {
-                  html +=
-                    `<p class="error">incorrect attribute on style ${n} :  - should be ` +
-                    `${keys2[i]}="${
-                      this.defaultConstantStyles[n][keys2[i]]
-                    }" but is ${keys2[i]}="${s[keys2[i]]}"</p>`;
+                if (!this.canChangeStyleAttribute[keys2[i]]){
+                  if (this.defaultConstantStyles[n][keys2[i]] !== s[keys2[i]]) {
+                    html +=
+                      `<p class="error">incorrect attribute on style ${n} :  - should be ` +
+                      `${keys2[i]}="${
+                        this.defaultConstantStyles[n][keys2[i]]
+                      }" but is ${keys2[i]}="${s[keys2[i]]}"</p>`;
+                  }
                 }
               }
               delete s[keys2[i]];
@@ -1718,7 +1729,7 @@ module.exports = {
     clearInterval(this.interval);
   },
 };
-//@ sourceURL=/vue/control.vue
+//@ sourceURL=/vue/display.vue
 </script>
 
 <style scoped>

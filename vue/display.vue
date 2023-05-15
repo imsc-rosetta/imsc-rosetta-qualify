@@ -66,7 +66,7 @@ module.exports = {
           "tts:showBackground": "whenActive",
           "tts:fontStyle": "normal",
           "tts:fontWeight": "normal",
-          "tts:color": "white",
+          //"tts:color": "white",
           "tts:fontFamily": "proportionalSansSerif",
           "tts:textAlign": "center",
           style: "_r_default",
@@ -249,6 +249,10 @@ module.exports = {
           "xml:id": "s_fg_magenta",
           "tts:color": "#FF00FF",
         },
+        s_fg_white: {
+          "xml:id": "s_fg_white",
+          "tts:color": "#FFFFFF",
+        },
 
         s_outlineblack: {
           "xml:id": "s_outlineblack",
@@ -413,6 +417,12 @@ module.exports = {
         },
       },
 
+      canChangeStyleAttribute:{
+        "tts:textOutline": true,
+        "tts:color": true,
+        "tts:backgroundColor": true,
+      },
+
       // these styles can be changed...
       // items which are true are required to be present.
       // items which are false are optional.
@@ -450,6 +460,7 @@ module.exports = {
           "tts:lineHeight": { required: true, default: "125%" },
           "ebutts:linePadding": { required: false, default: "0.25c" },
           "itts:fillLineGap": { required: false, default: "false" },
+          style: { required: true, default: "s_fg_white" },
           _always: true,
         },
       },
@@ -463,6 +474,7 @@ module.exports = {
         "tts:lineHeight": "125%",
         "ebutts:linePadding": "0.25c",
         "itts:fillLineGap": "false",
+        "style":"s_fg_white"
       },
 
       attributes: {
@@ -821,7 +833,7 @@ module.exports = {
       return html;
     },
 
-    processXml(file, xml) {
+    async processXml(file, xml) {
       this.clear();
 
       this.output = "";
@@ -848,63 +860,62 @@ module.exports = {
 
       this.timestart();
       this.output += this.timestamp("Start FullParse");
-      this.xml2js
-        .parseStringPromise(xml, parseOptionsFull)
-        .then((result) => {
-          this.output += this.timestamp("End FullParse");
 
-          //console.log("DoneFull:");
-          //console.dir(result);
-          // use full parse to check for extra space in p
-          this.output += this.timestamp("Start Spaces Check");
-          this.testImscRosettaSpaces(file, xml, result);
-          this.output += this.timestamp("End Spaces Check");
-          let json = JSON.stringify(result, null, " ");
-          let jsonel = document.getElementById("jsonfull");
-          jsonel.innerHTML = `<pre>${this.toHtmlEntities(json)}</pre>`;
+      try {
+        let result = await this.xml2js.parseStringPromise(xml, parseOptionsFull);
+        this.output += this.timestamp("End FullParse");
 
-          this.timestart();
-          this.output += this.timestamp("Start SimpleParse");
-          this.xml2js
-            .parseStringPromise(xml, parseOptionsSimple)
-            .then((result) => {
-              this.output += this.timestamp("End SimpleParse");
-              //console.log("DoneSimple:");
-              //console.dir(result);
+        //console.log("DoneFull:");
+        //console.dir(result);
+        // use full parse to check for extra space in p
+        this.output += this.timestamp("Start Spaces Check");
+        this.testImscRosettaSpaces(file, xml, result);
+        this.output += this.timestamp("End Spaces Check");
+        let json = JSON.stringify(result, null, " ");
+        let jsonel = document.getElementById("jsonfull");
+        jsonel.innerHTML = `<pre>${this.toHtmlEntities(json)}</pre>`;
+      } catch(err){
+        // Failed
+        let resultsel = document.getElementById("results");
+        resultsel.innerHTML =
+          resultsel.innerHTML +
+          `<p class="error">Error in Full Parsing: ${err.toString()}</p>`;
+        console.error(err);
+      }
 
-              let jsonel = document.getElementById("json");
-              let json = JSON.stringify(result, null, " ");
-              jsonel.innerHTML = `<pre>${this.toHtmlEntities(json)}</pre>`;
-              this.timestart();
-              this.output += this.timestamp("Start Test");
-              this.testImscRosetta(file, xml, result);
-              this.output += this.timestamp("End Test");
+      this.timestart();
+      this.output += this.timestamp("Start SimpleParse");
 
-              // round trip back to XML
-              this.timestart();
-              this.output += this.timestamp("Start Export");
-              this.processJson(file, result);
-              this.output += this.timestamp("End Export");
-              let resultsel = document.getElementById("results");
-              resultsel.innerHTML = resultsel.innerHTML + this.output;
-            })
-            .catch((err) => {
-              // Failed
-              let resultsel = document.getElementById("results");
-              resultsel.innerHTML =
-                resultsel.innerHTML +
-                `<p class="error">Error in Simple Parsing: ${err.toString()}</p>`;
-              console.error(err);
-            });
-        })
-        .catch((err) => {
-          // Failed
-          let resultsel = document.getElementById("results");
-          resultsel.innerHTML =
-            resultsel.innerHTML +
-            `<p class="error">Error in Full Parsing: ${err.toString()}</p>`;
-          console.error(err);
-        });
+      try {
+        let result = await this.xml2js.parseStringPromise(xml, parseOptionsSimple);
+        this.output += this.timestamp("End SimpleParse");
+        //console.log("DoneSimple:");
+        //console.dir(result);
+
+        let jsonel = document.getElementById("json");
+        this.timestart();
+        this.output += this.timestamp("Start Test");
+        this.testImscRosetta(file, xml, result);
+        this.output += this.timestamp("End Test");
+
+        let json = JSON.stringify(result, null, " ");
+        jsonel.innerHTML = `<pre>${this.toHtmlEntities(json)}</pre>`;
+
+        // round trip back to XML
+        this.timestart();
+        this.output += this.timestamp("Start Export");
+        this.processJson(file, result);
+        this.output += this.timestamp("End Export");
+        let resultsel = document.getElementById("results");
+        resultsel.innerHTML = resultsel.innerHTML + this.output;
+      } catch(err){
+        // Failed
+        let resultsel = document.getElementById("results");
+        resultsel.innerHTML =
+          resultsel.innerHTML +
+          `<p class="error">Error in Simple Parsing: ${err.toString()}</p>`;
+        console.error(err);
+      }
     },
 
     processJson(file, json) {
@@ -967,16 +978,22 @@ module.exports = {
       style = style || "";
       let s = style.split(" ");
       let valid = true;
+      let invalid = '';
       for (let i = 0; i < s.length; i++) {
-        if (!styles[s[i]]) valid = false;
-        else {
+        if (!styles[s[i]]) {
+          valid = false;
+          if (invalid) invalid += ',';
+          invalid += s[i];
+        } else {
           styles[s[i]]._use = (styles[s[i]]._use || 0) + 1;
           if (styles[s[i]].style) {
-            valid = this.checkstyle(styles, styles[s[i]].style);
+            let childinvalid = this.checkstyle(styles, styles[s[i]].style);
+            if (invalid && childinvalid) invalid += ',';
+            invalid += childinvalid;
           }
         }
       }
-      return valid;
+      return invalid;
     },
 
     checkAttributes(type, attrs) {
@@ -1034,6 +1051,10 @@ module.exports = {
       }
 
       for (let i = 0; i < nodes.length; i++) {
+        // parser bug in xml2js
+        if (typeof nodes[i] === 'string'){
+          nodes[i] = {'_':nodes[i]};
+        }
         let node = nodes[i];
         let childnames = Object.keys(node);
 
@@ -1193,9 +1214,10 @@ module.exports = {
             let stylenames = Object.keys(styles);
             for (let i = 0; i < stylenames.length; i++) {
               if (styles[stylenames[i]].style) {
-                if (!this.checkstyle(styles, styles[stylenames[i]].style))
+                let invalid = this.checkstyle(styles, styles[stylenames[i]].style);
+                if (invalid)
                   html += `<p class="error">unknown style (${
-                    styles[stylenames[i]].style
+                    invalid
                   })on style ${stylenames[i]}</p>`;
               }
             }
@@ -1239,8 +1261,9 @@ module.exports = {
 
                     xmlids.push(a["xml:id"]);
                     if (a.style) {
-                      if (!this.checkstyle(styles, a.style))
-                        html += `<p class="error">unknown style (${a.style})on region ${a["xml:id"]}</p>`;
+                      let invalid = this.checkstyle(styles, a.style);
+                      if (invalid)
+                        html += `<p class="error">unknown style (${invalid})on region ${a["xml:id"]}</p>`;
                     }
                   }
                 }
@@ -1330,8 +1353,9 @@ module.exports = {
               if (!a.style)
                 html += `<p class="warn">missing style on div ${id}</p>`;
               else {
-                if (!this.checkstyle(styles, a.style))
-                  html += `<p class="error">unknown style (${a.style})on div ${id}</p>`;
+                let invalid = this.checkstyle(styles, a.style);
+                if (invalid)
+                  html += `<p class="error">unknown style (${invalid})on div ${id}</p>`;
               }
 
               if (!d.p || !d.p.length) {
@@ -1348,8 +1372,9 @@ module.exports = {
                   if (!pa.style)
                     html += `<p class="error">missing style on p in div ${id}</p>`;
                   else {
-                    if (!this.checkstyle(styles, pa.style))
-                      html += `<p class="error">unknown style (${pa.style}) on p in div ${id}</p>`;
+                    let invalid = this.checkstyle(styles, pa.style);
+                    if (invalid)
+                      html += `<p class="error">unknown style (${invalid}) on p in div ${id}</p>`;
                   }
                 }
                 if (undefined !== p._)
@@ -1370,8 +1395,9 @@ module.exports = {
                       if (!as1.style)
                         html += `<p class="error">empty style in span on div ${id}</p>`;
                       else {
-                        if (!this.checkstyle(styles, as1.style))
-                          html += `<p class="error">unknown style (${as1.style}) in span on div ${id}</p>`;
+                        let invalid = this.checkstyle(styles, as1.style);
+                        if (invalid)
+                          html += `<p class="error">unknown style (${invalid}) on span in div ${id}</p>`;
                       }
                     }
 
@@ -1427,9 +1453,9 @@ module.exports = {
                         }
                         if (!hasruby)
                           html += `<p class="error">nested ruby span should be s_rb_b or s_rb_t on div ${id}</p>`;
-                        if (!this.checkstyle(styles, as2.style))
-                          html += `<p class="error">unknown style (${as2.style}) in span on div ${id}</p>`;
-
+                        let invalid = this.checkstyle(styles, as2.style);
+                        if (invalid)
+                          html += `<p class="error">unknown style (${invalid}) on span in div ${id}</p>`;
                         if (sp2.span) {
                           html += `<p class="error">double nested span in div ${id}</p>`;
                         }
@@ -1483,12 +1509,14 @@ module.exports = {
                   keys2[i]
                 }="${this.defaultConstantStyles[n][keys2[i]]}"</p>`;
               } else {
-                if (this.defaultConstantStyles[n][keys2[i]] !== s[keys2[i]]) {
-                  html +=
-                    `<p class="error">incorrect attribute on style ${n} :  - should be ` +
-                    `${keys2[i]}="${
-                      this.defaultConstantStyles[n][keys2[i]]
-                    }" but is ${keys2[i]}="${s[keys2[i]]}"</p>`;
+                if (!this.canChangeStyleAttribute[keys2[i]]){
+                  if (this.defaultConstantStyles[n][keys2[i]] !== s[keys2[i]]) {
+                    html +=
+                      `<p class="error">incorrect attribute on style ${n} :  - should be ` +
+                      `${keys2[i]}="${
+                        this.defaultConstantStyles[n][keys2[i]]
+                      }" but is ${keys2[i]}="${s[keys2[i]]}"</p>`;
+                  }
                 }
               }
               delete s[keys2[i]];
@@ -1701,7 +1729,7 @@ module.exports = {
     clearInterval(this.interval);
   },
 };
-//@ sourceURL=/vue/control.vue
+//@ sourceURL=/vue/display.vue
 </script>
 
 <style scoped>

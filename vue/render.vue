@@ -109,6 +109,8 @@ module.exports = {
     getDivs(xml) {
       let divs = xml.match(/<div[\s\S]*?div>/g);
 
+      divs = divs || [];
+
       this.intimes = [];
       for (let i = 0; i < divs.length; i++) {
         let b = divs[i].split('begin="')[1];

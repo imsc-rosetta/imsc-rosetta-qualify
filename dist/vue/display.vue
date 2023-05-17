@@ -30,6 +30,7 @@
 </template>
 
 <script>
+
 module.exports = {
   data: () => {
     return {
@@ -75,6 +76,7 @@ module.exports = {
         r_vertical: {
           "xml:id": "r_vertical",
           "tts:writingMode": "tbrl",
+          "style": "_r_vertical",
         },
 
         d_forced: {
@@ -102,6 +104,10 @@ module.exports = {
         p_al_start: {
           "xml:id": "p_al_start",
           "tts:textAlign": "start",
+        },
+        p_al_center: {
+          "xml:id": "p_al_center",
+          "tts:textAlign": "center",
         },
         p_al_end: {
           "xml:id": "p_al_end",
@@ -355,8 +361,8 @@ module.exports = {
           "tts:rubyReserve": "outside",
         },
 
-        ps_shear: {
-          "xml:id": "ps_shear",
+        p_shear: {
+          "xml:id": "p_shear",
           "tts:shear": "16.67%",
         },
 
@@ -418,9 +424,26 @@ module.exports = {
       },
 
       canChangeStyleAttribute:{
-        "tts:textOutline": true,
-        "tts:color": true,
-        "tts:backgroundColor": true,
+        "tts:textOutline": {test:(val)=>{
+          // "#000000 0.05em"
+          if (!val.startsWith('#')) return false;
+          if (!val.endsWith('em')) return false;
+          let splt = val.split(' ');
+          if (splt.length !== 2) return false;
+          return true;
+        }},
+        "tts:color": {test:(val)=>{
+          if (!val.startsWith('#')) return false;
+          let splt = val.split(' ');
+          if (splt.length !== 1) return false;
+          return true;
+        }},
+        "tts:backgroundColor": {test:(val)=>{
+          if (!val.startsWith('#')) return false;
+          let splt = val.split(' ');
+          if (splt.length !== 1) return false;
+          return true;
+        }},
       },
 
       // these styles can be changed...
@@ -433,8 +456,16 @@ module.exports = {
             required: true,
             default: "proportionalSansSerif",
           },
-          "tts:lineHeight": { required: true, default: "125%" },
-          "tts:fontSize": { required: true, default: "100%" },
+          "tts:lineHeight": { required: true, default: "125%", test: (val)=>{
+            let int = parseFloat(val);
+            if (!val.endsWith('%')) return false;
+            return true;
+          } },
+          "tts:fontSize": { required: true, default: "100%", test: (val)=>{
+            let int = parseFloat(val);
+            if (!val.endsWith('%')) return false;
+            return true;
+          } },
         },
         p_font2: {
           "xml:id": "p_font2",
@@ -442,27 +473,89 @@ module.exports = {
             required: true,
             default: "proportionalSansSerif",
           },
-          "tts:lineHeight": { required: true, default: "125%" },
-          "tts:fontSize": { required: true, default: "100%" },
+          "tts:lineHeight": { required: true, default: "125%", test: (val)=>{
+            let int = parseFloat(val);
+            if (!val.endsWith('%')) return false;
+            return true;
+          } },
+          "tts:fontSize": { required: true, default: "100%", test: (val)=>{
+            let int = parseFloat(val);
+            if (!val.endsWith('%')) return false;
+            return true;
+          } },
         },
 
         _d_default: {
           "xml:id": "_d_default",
-          style: { required: false, default: "d_outineblack" },
+          style: { required: false, default: "d_outineblack", test:(val)=>{
+            if (!val.startsWith("d_")) return false; return true;
+          } },
           _always: true,
         },
         _r_default: {
           "xml:id": "_r_default",
-          "tts:origin": { required: true, default: "10% 10%" },
-          "tts:extent": { required: true, default: "80% 80%" },
+          "tts:origin": { required: true, default: "10% 10%", test: (vals)=>{
+            let splt = vals.split(' ');
+            if (splt.length !== 2) return false;
+            for (let i = 0; i < splt.length; i++){
+              let val = splt[i];
+              let int = parseFloat(val);
+              if (!val.endsWith('%')) return false;
+            }
+            return true;
+          } },
+          "tts:extent": { required: true, default: "80% 80%", test: (vals)=>{
+            let splt = vals.split(' ');
+            if (splt.length !== 2) return false;
+            for (let i = 0; i < splt.length; i++){
+              let val = splt[i];
+              let int = parseFloat(val);
+              if (!val.endsWith('%')) return false;
+            }
+            return true;
+          } },
           "tts:displayAlign": { required: true, default: "after" },
-          "tts:fontSize": { required: true, default: "5.333rh" },
-          "tts:lineHeight": { required: true, default: "125%" },
-          "ebutts:linePadding": { required: false, default: "0.25c" },
-          "itts:fillLineGap": { required: false, default: "false" },
-          style: { required: true, default: "s_fg_white" },
+          "tts:fontSize": { required: true, default: "5.333rh", test: (val)=>{
+            let int = parseFloat(val);
+            if (!val.endsWith('rh')) return false;
+            return true;
+          } },
+          "tts:lineHeight": { required: true, default: "125%", test: (val)=>{
+            let int = parseFloat(val);
+            if (!val.endsWith('%')) return false;
+            return true;
+          } },
+          "ebutts:linePadding": { required: false, default: "0.25c", test: (val)=>{
+            let int = parseFloat(val);
+            if (!val.endsWith('c')) return false;
+            return true;
+          } },
+          "itts:fillLineGap": { required: false, default: "false", test: (val)=>{
+            if (val !== 'true' || val !== 'false') return false;
+            return true;
+          } },
+          style: { required: true, default: "s_fg_white", test:(val)=>{
+            let splt = val.split(' ');
+            let colour = 0;
+            for (let i = splt.length-1; i >= 0; i--){
+              let s = splt[i];
+              if (s.startsWith("s_fg_")) {splt.pop(); colour++};
+              if (s.startsWith("p_al_")) splt.pop();
+            }
+            if (splt.length) return false;
+            if (colour !== 1) return false;
+            return true; 
+          } },
           _always: true,
         },
+        _r_vertical: {
+          "xml:id": "_r_vertical",
+          "style": { required: false, default: "p_al_center", test:(val)=>{
+            if (!val.startsWith('p_al_')) return false;
+            if (val.includes(' ')) return false;
+            return true;
+          }},
+        }
       },
 
       default_r_default: {
@@ -1517,6 +1610,10 @@ module.exports = {
                         this.defaultConstantStyles[n][keys2[i]]
                       }" but is ${keys2[i]}="${s[keys2[i]]}"</p>`;
                   }
+                } else {
+                  if (!this.canChangeStyleAttribute[keys2[i]].test(s[keys2[i]])){
+                    `<p class="error">invalid attribute on style ${n}: value ${keys2[i]}="${s[keys2[i]]}"</p>`;
+                  }
                 }
               }
               delete s[keys2[i]];
@@ -1528,24 +1625,34 @@ module.exports = {
             let keys2 = Object.keys(this.defaultChangeableStyles[n]);
             for (let i = 0; i < keys2.length; i++) {
               if (!keys2[i].startsWith("_")) {
-                if (
-                  undefined === s[keys2[i]] &&
-                  this.defaultChangeableStyles[n][keys2[i]].required
-                ) {
-                  html += `<p class="error">missing required attribute on changeable style ${n} : ${keys2[i]}</p>`;
-                } else {
-                  if (undefined === s[keys2[i]]) {
+                if (undefined === s[keys2[i]]) {
+                  // attribute is not present
+                  if (
+                    this.defaultChangeableStyles[n][keys2[i]].required
+                  ) {
+                    html += `<p class="error">missing required attribute on changeable style ${n} : ${keys2[i]}</p>`;
+                  } else {
                     html +=
                       `<p class="warn">missing optional attribute on changeable style ${n} : it could be more explicit,` +
                       ` e.g. ${keys2[i]}="${
                         this.defaultChangeableStyles[n][keys2[i]].default
                       }"</p>`;
                   }
-                  /*if (this.defaultChangeableStyles[n][keys2[i]] !== s[keys2[i]]){
-                      html += `<p class="error">incorrect attribute on style ${n} :  - should be ${keys2[i]}="${this.defaultChangeableStyles[n][keys2[i]]}" but is ${keys2[i]}="${s[keys2[i]]}"</p>`;
-                    }*/
+                } else {
+                  //attribute is present
+                  if (this.defaultChangeableStyles[n][keys2[i]].test){
+                    if (!this.defaultChangeableStyles[n][keys2[i]].test(s[keys2[i]])){
+                      if (this.defaultChangeableStyles[n][keys2[i]].required){
+                        html += `<p class="error">required attribute ${keys2[i]} on changeable style ${n}: value ${s[keys2[i]]} is not valid</p>`;
+                      } else {
+                        html += `<p class="error">optional attribute ${keys2[i]} on changeable style ${n}: value ${s[keys2[i]]} is not valid</p>`;
+                      }
+                    }
+                  }
                 }
                 delete s[keys2[i]];
+              } else {
+                // attribute starts with _, therefore a control for us
               }
             }
           } else {

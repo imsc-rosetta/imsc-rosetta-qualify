@@ -18,7 +18,7 @@
 <template>
   <div>
     <div class="render" :id="renderId"></div>
-    <p>ISDs generated: {{ tmax }}</p>
+    <p>ISDs generated: {{ tmax }} <button @click="saveAsPNG();">GenerateImages</button></p>
     <div>
       <span>{{ selectedTime }} </span><span>Rendered using: {{imscVersion}}</span><input type="range" min="0" v-bind:max="tmax" v-model="timeindex" />
     </div>
@@ -96,6 +96,11 @@ module.exports = {
 
     processXml(file, xml) {
       //console.log("would render");
+      this.filename = file.name;
+      this.filename = this.filename.split('.');
+      this.filename.pop();
+      this.filename = this.filename.join('.');
+
       this.getDivs(xml);
       this.doc = this.imsc.fromXML(xml);
       this.t = this.doc.getMediaTimeEvents();
@@ -125,6 +130,113 @@ module.exports = {
 
       //console.log(divs);
     },
+
+    async saveAsPNG() {
+      let defdims = {'h': 1080, 'w': 1920};
+
+      this.vdiv.hidden = true;
+      let zip = new JSZip();
+      let render_one = (offset)=>{
+        return new Promise((resolve)=>{
+          let dims = defdims;
+          let exp_width = dims.w;
+          let exp_height = dims.h;
+          let vdiv = this.vdiv;
+
+          this.vdiv.innerHTML = "";
+          /* create svg container */
+
+          let svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+          svg.setAttribute('width', exp_width + "px");
+          svg.setAttribute('height', exp_height + "px");
+          svg.setAttribute("xmlns", svg.namespaceURI);
+
+          let fo = document.createElementNS("http://www.w3.org/2000/svg", "foreignObject");
+          fo.setAttribute('width', '100%');
+          fo.setAttribute('height', '100%');
+
+          svg.appendChild(fo);
+
+          /* create container div */
+
+          let rdiv = document.createElement("div");
+          rdiv.style.height = "100%";
+          rdiv.style.width = "100%";
+          rdiv.style.position = "relative";
+          rdiv.style.background = "linear-gradient(135deg, #b5bdc8 0%,#828c95 36%,#28343b 100%)";
+
+          if (!rdiv.style.background) {
+              rdiv.style.background = "-moz-linear-gradient(left, #b5bdc8 0%, #828c95 36%, #28343b 100%)";
+          }
+
+          if (!rdiv.style.background) {
+              rdiv.style.background = "-webkit-linear-gradient(left, #b5bdc8 0%, #828c95 36%, #28343b 100%)";
+          }
+
+          if (!rdiv.style.background) {
+              rdiv.style.background = "#b5bdc8";
+          }
+
+          fo.appendChild(rdiv);
+
+          vdiv.appendChild(svg);
+
+
+          var isd = imsc.generateISD(this.doc, offset);
+
+          imsc.renderHTML(
+                  isd,
+                  rdiv,
+                  function (uri) {
+                      return uri;
+                  },
+                  exp_height,
+                  exp_width,
+                  false, //$("#forced-display")[0].checked, /*displayForcedOnlyMode*/
+                  null /*errorHandler*/
+                  );
+          
+          var svgser = (new XMLSerializer).serializeToString(svg);
+
+          var canvas = document.createElement("canvas");
+
+          var ctx = canvas.getContext('2d');
+          ctx.canvas.height = exp_height;
+          ctx.canvas.width = exp_width;
+
+          var url = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svgser);
+
+          var img = new Image();
+          img.onload = function () {
+              ctx.drawImage(img, 0, 0);
+              let data = canvas.toDataURL("image/png");
+              let fname = offset + ".png";
+              zip.file(fname, data.substr(data.indexOf(',') + 1), {base64: true});
+              resolve(null);
+          };
+          img.src = url;
+        });
+
+      };
+
+
+      // render all the time we are interested in (all the begins, NOT the ends)
+      for (let i = 0; i < this.intimes.length; i++){
+        await render_one(this.intimes[i]);
+      }
+
+      this.vdiv.innerHTML = "";
+      this.timeindex = 0;
+
+      let content = await zip.generateAsync({type: "blob"});
+      var fname = this.filename;
+      saveAs(content, fname + ".zip");
+
+      setTimeout(() => {
+        this.timeindex = 1;
+        this.vdiv.hidden = false;
+      }, 100);
+    }    
   },
 
   mounted() {

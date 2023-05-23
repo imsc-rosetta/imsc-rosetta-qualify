@@ -485,6 +485,14 @@ module.exports = {
           } },
         },
 
+        d_default: {
+          "xml:id": "d_default",
+          style: { required: false, default: "_d_default", test:(val)=>{
+            if (val !== "_d_default") return false; return true;
+          } },
+          _always: true,
+        },
+
         _d_default: {
           "xml:id": "_d_default",
           style: { required: false, default: "d_outineblack", test:(val)=>{
@@ -492,8 +500,8 @@ module.exports = {
           } },
           _always: true,
         },
-        _r_default: {
-          "xml:id": "_r_default",
+        _r_quantisationregion: {
+          "xml:id": "_r_quantisationregion",
           "tts:origin": { required: true, default: "10% 10%", test: (vals)=>{
             let splt = vals.split(' ');
             if (splt.length !== 2) return false;
@@ -514,7 +522,20 @@ module.exports = {
             }
             return true;
           } },
-          "tts:displayAlign": { required: true, default: "after" },
+          "tts:fontSize": { required: true, default: "5.333rh", test: (val)=>{
+            let int = parseFloat(val);
+            if (!val.endsWith('rh')) return false;
+            return true;
+          } },
+          "tts:lineHeight": { required: true, default: "125%", test: (val)=>{
+            let int = parseFloat(val);
+            if (!val.endsWith('%')) return false;
+            return true;
+          } },
+          _always: true,
+        },
+        _r_default: {
+          "xml:id": "_r_default",
           "tts:fontSize": { required: true, default: "5.333rh", test: (val)=>{
             let int = parseFloat(val);
             if (!val.endsWith('rh')) return false;
@@ -531,7 +552,7 @@ module.exports = {
             return true;
           } },
           "itts:fillLineGap": { required: false, default: "false", test: (val)=>{
-            if (val !== 'true' || val !== 'false') return false;
+            if (val !== 'true' && val !== 'false') return false;
             return true;
           } },
           style: { required: true, default: "s_fg_white", test:(val)=>{
@@ -550,7 +571,8 @@ module.exports = {
         },
         _r_vertical: {
           "xml:id": "_r_vertical",
-          "style": { required: false, default: "p_al_center", test:(val)=>{
+          "style": { required: true, default: "p_al_center", test:(val)=>{
+            if (!val) return true;
             if (!val.startsWith('p_al_')) return false;
             if (val.includes(' ')) return false;
             return true;
@@ -558,16 +580,12 @@ module.exports = {
         }
       },
 
-      default_r_default: {
-        "xml:id": "_r_default",
+      default_r_quantisationregion: {
+        "xml:id": "_r_quantisationregion",
         "tts:origin": "10% 10%",
         "tts:extent": "80% 80%",
-        "tts:displayAlign": "after",
         "tts:fontSize": "5.333rh",
         "tts:lineHeight": "125%",
-        "ebutts:linePadding": "0.25c",
-        "itts:fillLineGap": "false",
-        "style":"s_fg_white"
       },
 
       attributes: {
@@ -932,6 +950,8 @@ module.exports = {
       this.output = "";
       this.timestart();
 
+      let simpleresult;
+
       let xmlel = document.getElementById("xml");
       xmlel.innerHTML = `<pre>${this.toHtmlEntities(xml)}</pre>`;
       let parseOptionsFull = {
@@ -981,6 +1001,7 @@ module.exports = {
 
       try {
         let result = await this.xml2js.parseStringPromise(xml, parseOptionsSimple);
+        simpleresult = result;
         this.output += this.timestamp("End SimpleParse");
         //console.log("DoneSimple:");
         //console.dir(result);
@@ -1009,6 +1030,8 @@ module.exports = {
           `<p class="error">Error in Simple Parsing: ${err.toString()}</p>`;
         console.error(err);
       }
+
+      return simpleresult;
     },
 
     processJson(file, json) {
@@ -1067,26 +1090,124 @@ module.exports = {
       resultsel.innerHTML = resultsel.innerHTML + html;
     },
 
-    checkstyle(styles, style) {
+    checkstyle(styles, style, eltype, stack) {
       style = style || "";
       let s = style.split(" ");
       let valid = true;
       let invalid = '';
+      let unknown = '';
+      let pass = true;
+
+      if (undefined === stack){
+        stack = [];
+      }
+
+      if (stack.length > 10){
+        return {invalid:'style depth > 10', unknown:'', pass:false };
+      }
+
+      // check for required styles on elements
+      switch(eltype){
+        case 'region':{
+          if (!s.includes('r_region')){
+            if (invalid) invalid += ',';
+            invalid += 'missing r_region';
+          }
+        } break;
+        case 'div':{
+          if (!s.includes('d_default')){
+            if (invalid) invalid += ',';
+            invalid += 'missing d_default';
+          }
+        } break;
+        case 'p':{
+          if (!s.includes('p_font1') && !s.includes('p_font2')){
+            if (invalid) invalid += ',';
+            invalid += 'missing p_fontN';
+          }
+          if (s.includes('p_font1') && s.includes('p_font2')){
+            if (invalid) invalid += ',';
+            invalid += 'both p_font1 and p_font2 specified';
+          }
+        } break;
+        case 'span':{
+        } break;
+        case 'span_ruby':{
+        } break;
+        default:
+          break;
+      }
+
       for (let i = 0; i < s.length; i++) {
+        if (stack.includes(s[i])){
+          if (invalid) invalid += ',';
+          invalid += 'circular ref to '+s[i];
+          continue;
+        }
+
         if (!styles[s[i]]) {
           valid = false;
-          if (invalid) invalid += ',';
-          invalid += s[i];
+          if (unknown) unknown += ',';
+          unknown += s[i];
         } else {
+          switch(eltype){
+            case 'region':{
+              if (!s[i].startsWith('r_')){
+                if (invalid) invalid += ',';
+                invalid += s[i];
+                continue;
+              }
+            } break;
+            case 'div':{
+              if (!s[i].startsWith('d_')){
+                if (invalid) invalid += ',';
+                invalid += s[i];
+                continue;
+              }
+            } break;
+            case 'p':{
+              if (!s[i].startsWith('p_') && !s[i].startsWith('ps_')){
+                if (invalid) invalid += ',';
+                invalid += s[i];
+                continue;
+              }
+            } break;
+            case 'span':{
+              if (!s[i].startsWith('s_') && !s[i].startsWith('ps_')){
+                if (invalid) invalid += ',';
+                invalid += s[i];
+                continue;
+              }
+            } break;
+            case 'span_ruby':{
+              if (!s[i].startsWith('s_') && !s[i].startsWith('ps_')){
+                if (invalid) invalid += ',';
+                invalid += s[i];
+                continue;
+              }
+            } break;
+            default:
+              break;
+          }
           styles[s[i]]._use = (styles[s[i]]._use || 0) + 1;
           if (styles[s[i]].style) {
-            let childinvalid = this.checkstyle(styles, styles[s[i]].style);
-            if (invalid && childinvalid) invalid += ',';
-            invalid += childinvalid;
+            stack.push(s[i]);
+            let childinvalid = this.checkstyle(styles, styles[s[i]].style, null, stack);
+            stack.pop();
+            pass &= childinvalid.pass;
+            if (childinvalid.invalid){
+              if (invalid) invalid += ',';
+              invalid += childinvalid.invalid;
+            }
+            if (childinvalid.unknown){
+              if (unknown) unknown += ',';
+              unknown += childinvalid.unknown;
+            }
           }
         }
       }
-      return invalid;
+      if (invalid || unknown) pass = false;
+      return {invalid, unknown, pass};
     },
 
     checkAttributes(type, attrs) {
@@ -1199,6 +1320,7 @@ module.exports = {
       let resultsel = document.getElementById("results");
 
       let html = "";
+      let pass = true;
 
       let xmlids = [];
       let xmlidobj = {};
@@ -1308,12 +1430,20 @@ module.exports = {
             for (let i = 0; i < stylenames.length; i++) {
               if (styles[stylenames[i]].style) {
                 let invalid = this.checkstyle(styles, styles[stylenames[i]].style);
-                if (invalid)
+                pass &= invalid.pass;
+                if (invalid.unknown){
                   html += `<p class="error">unknown style (${
-                    invalid
+                    invalid.unknown
                   })on style ${stylenames[i]}</p>`;
+                }
+                if (invalid.invalid){
+                  html += `<p class="error">invalid style (${
+                    invalid.invalid
+                  })on style ${stylenames[i]}</p>`;
+                }
               }
             }
+
           }
 
           {
@@ -1354,9 +1484,18 @@ module.exports = {
 
                     xmlids.push(a["xml:id"]);
                     if (a.style) {
-                      let invalid = this.checkstyle(styles, a.style);
-                      if (invalid)
-                        html += `<p class="error">unknown style (${invalid})on region ${a["xml:id"]}</p>`;
+                      let invalid = this.checkstyle(styles, a.style, 'region');
+                      pass &= invalid.pass;
+                      if (invalid.unknown){
+                        html += `<p class="error">unknown style (${
+                          invalid.unknown
+                        })on region ${a["xml:id"]}</p>`;
+                      }
+                      if (invalid.invalid){
+                        html += `<p class="error">invalid style (${
+                          invalid.invalid
+                        })on region ${a["xml:id"]}</p>`;
+                      }
                     }
                   }
                 }
@@ -1446,9 +1585,18 @@ module.exports = {
               if (!a.style)
                 html += `<p class="warn">missing style on div ${id}</p>`;
               else {
-                let invalid = this.checkstyle(styles, a.style);
-                if (invalid)
-                  html += `<p class="error">unknown style (${invalid})on div ${id}</p>`;
+                let invalid = this.checkstyle(styles, a.style, 'div');
+                pass &= invalid.pass;
+                if (invalid.unknown){
+                  html += `<p class="error">unknown style (${
+                    invalid.unknown
+                  })on div ${id}</p>`;
+                }
+                if (invalid.invalid){
+                  html += `<p class="error">invalid style (${
+                    invalid.invalid
+                  })on div ${id}</p>`;
+                }
               }
 
               if (!d.p || !d.p.length) {
@@ -1465,9 +1613,18 @@ module.exports = {
                   if (!pa.style)
                     html += `<p class="error">missing style on p in div ${id}</p>`;
                   else {
-                    let invalid = this.checkstyle(styles, pa.style);
-                    if (invalid)
-                      html += `<p class="error">unknown style (${invalid}) on p in div ${id}</p>`;
+                    let invalid = this.checkstyle(styles, pa.style, 'p');
+                    pass &= invalid.pass;
+                    if (invalid.unknown){
+                      html += `<p class="error">unknown style (${
+                        invalid.unknown
+                      }) on p in div ${id}</p>`;
+                    }
+                    if (invalid.invalid){
+                      html += `<p class="error">invalid style (${
+                        invalid.invalid
+                      }) on p in div ${id}</p>`;
+                    }
                   }
                 }
                 if (undefined !== p._)
@@ -1488,9 +1645,17 @@ module.exports = {
                       if (!as1.style)
                         html += `<p class="error">empty style in span on div ${id}</p>`;
                       else {
-                        let invalid = this.checkstyle(styles, as1.style);
-                        if (invalid)
-                          html += `<p class="error">unknown style (${invalid}) on span in div ${id}</p>`;
+                        let invalid = this.checkstyle(styles, as1.style, 'span');
+                        if (invalid.unknown){
+                          html += `<p class="error">unknown style (${
+                            invalid.unknown
+                          }) on span in div ${id}</p>`;
+                        }
+                        if (invalid.invalid){
+                          html += `<p class="error">invalid style (${
+                            invalid.invalid
+                          }) on span in div ${id}</p>`;
+                        }
                       }
                     }
 
@@ -1546,9 +1711,17 @@ module.exports = {
                         }
                         if (!hasruby)
                           html += `<p class="error">nested ruby span should be s_rb_b or s_rb_t on div ${id}</p>`;
-                        let invalid = this.checkstyle(styles, as2.style);
-                        if (invalid)
-                          html += `<p class="error">unknown style (${invalid}) on span in div ${id}</p>`;
+                        let invalid = this.checkstyle(styles, as2.style, 'span_ruby');
+                        if (invalid.unknown){
+                          html += `<p class="error">unknown style (${
+                            invalid.unknown
+                          }) on ruby span in div ${id}</p>`;
+                        }
+                        if (invalid.invalid){
+                          html += `<p class="error">invalid style (${
+                            invalid.invalid
+                          }) on ruby span in div ${id}</p>`;
+                        }
                         if (sp2.span) {
                           html += `<p class="error">double nested span in div ${id}</p>`;
                         }
@@ -1573,21 +1746,52 @@ module.exports = {
         }
 
         html += '<p class="info">Analysing Styles</p>';
-        html += this.validateStyles(styles);
+        var v = this.validateStyles(styles);
+        html += v.html;
+        pass &= v.pass;
         html += '<p class="info">Analysing Regions</p>';
         html += this.validateRegions(regions, styles);
       } while (0);
       resultsel.innerHTML = resultsel.innerHTML + html;
+
+      return pass;
     },
 
     validateStyles(styles) {
+      let pass = true;
       let html = "";
+      let constantStyleNames = Object.keys(this.defaultConstantStyles);
+      for (let i = 0; i < constantStyleNames.length; i++) {
+        if (this.defaultConstantStyles[constantStyleNames[i]]._always){
+          if (!styles[constantStyleNames[i]]){
+            html += `<p class="error">Missing required constant style ${constantStyleNames[i]}</p>`;
+            pass = false;
+          }
+        }
+      }
+
+      let changeableStyleNames = Object.keys(this.defaultChangeableStyles);
+      for (let i = 0; i < changeableStyleNames.length; i++) {
+        if (this.defaultChangeableStyles[changeableStyleNames[i]]._always){
+          if (!styles[changeableStyleNames[i]]){
+            html += `<p class="error">Missing required changeable style ${changeableStyleNames[i]}</p>`;
+            pass = false;
+          }
+        }
+      }
+
+      if (styles['_r_quantisationregion'] && styles['_r_quantisationregion']._use){
+        html += `<p class="error">style _r_quantisationregion must not be referenced</p>`;
+        pass = false;
+      }
+
       let stylenames = Object.keys(styles);
       for (let i = 0; i < stylenames.length; i++) {
         let n = stylenames[i];
         let s = Object.assign({}, styles[n]);
 
         if (!s._use) {
+          if (n !== '_r_quantisationregion')
           html += `<p class="warn">unused style ${n}</p>`;
         }
 
@@ -1601,6 +1805,7 @@ module.exports = {
                 html += `<p class="error">missing attribute on style ${n} : ${
                   keys2[i]
                 }="${this.defaultConstantStyles[n][keys2[i]]}"</p>`;
+                pass = false;
               } else {
                 if (!this.canChangeStyleAttribute[keys2[i]]){
                   if (this.defaultConstantStyles[n][keys2[i]] !== s[keys2[i]]) {
@@ -1609,10 +1814,12 @@ module.exports = {
                       `${keys2[i]}="${
                         this.defaultConstantStyles[n][keys2[i]]
                       }" but is ${keys2[i]}="${s[keys2[i]]}"</p>`;
+                    pass = false;
                   }
                 } else {
                   if (!this.canChangeStyleAttribute[keys2[i]].test(s[keys2[i]])){
                     `<p class="error">invalid attribute on style ${n}: value ${keys2[i]}="${s[keys2[i]]}"</p>`;
+                    pass = false;
                   }
                 }
               }
@@ -1631,6 +1838,7 @@ module.exports = {
                     this.defaultChangeableStyles[n][keys2[i]].required
                   ) {
                     html += `<p class="error">missing required attribute on changeable style ${n} : ${keys2[i]}</p>`;
+                    pass = false;
                   } else {
                     html +=
                       `<p class="warn">missing optional attribute on changeable style ${n} : it could be more explicit,` +
@@ -1644,8 +1852,10 @@ module.exports = {
                     if (!this.defaultChangeableStyles[n][keys2[i]].test(s[keys2[i]])){
                       if (this.defaultChangeableStyles[n][keys2[i]].required){
                         html += `<p class="error">required attribute ${keys2[i]} on changeable style ${n}: value ${s[keys2[i]]} is not valid</p>`;
+                        pass = false;
                       } else {
                         html += `<p class="error">optional attribute ${keys2[i]} on changeable style ${n}: value ${s[keys2[i]]} is not valid</p>`;
+                        pass = false;
                       }
                     }
                   }
@@ -1657,6 +1867,7 @@ module.exports = {
             }
           } else {
             html += `<p class="error">invalid style name ${n}</p>`;
+            pass = false;
             checkextras = false;
           }
         }
@@ -1668,14 +1879,15 @@ module.exports = {
                 keys2[i]
               }="${s[keys2[i]]}"</p>`;
               delete s[keys2[i]];
+              pass = false;
             }
           }
         }
       }
-      return html;
+      return {html, pass};
     },
 
-    getRegionVars(r) {
+    getRegionVars(r, ignoreDisplayAlign) {
       let xy = r["tts:origin"].split(" ");
       let wh = r["tts:extent"].split(" ");
       let errors = "";
@@ -1693,13 +1905,14 @@ module.exports = {
         errors += " invalid lineHeight ";
       }
 
-      if (
-        r["tts:displayAlign"] !== "after" &&
-        r["tts:displayAlign"] !== "before"
-      ) {
-        errors += " invalid displayAlign ";
+      if (!ignoreDisplayAlign){
+        if (
+          r["tts:displayAlign"] !== "after" &&
+          r["tts:displayAlign"] !== "before"
+        ) {
+          errors += " invalid displayAlign ";
+        }
       }
-
       let values = {
         top: parseFloat(xy[1]),
         left: parseFloat(xy[0]),
@@ -1724,15 +1937,15 @@ module.exports = {
       let html = "";
       let regionnames = Object.keys(regions);
 
-      let baseregion = styles["_r_default"];
+      let baseregion = styles["_r_quantisationregion"];
       if (!baseregion) {
-        html += `<p class="error">style _r_region is not defined</p>`;
-        baseregion = this.default_r_default;
+        html += `<p class="error">style _r_quantisationregion is not defined</p>`;
+        baseregion = this.default_r_quantisationregion;
       }
 
-      let base = this.getRegionVars(baseregion);
+      let base = this.getRegionVars(baseregion, true);
       if (base.errors) {
-        html += `<p class="error">style _r_region invalid: ${base.errors}</p>`;
+        html += `<p class="error">style _r_quantisationregion invalid: ${base.errors}</p>`;
       }
 
       // line height based on fontSize and lineheight which are ratios.
@@ -1743,14 +1956,14 @@ module.exports = {
       let linesCount = base.height / baseLineHeight;
       let linesCountInt = Math.round(linesCount);
       if (Math.abs(linesCount - linesCountInt) > 0.1) {
-        html += `<p class="error">base _r_region line count (${linesCount} to ${linesCountInt} differs by > 10%) calculation is not near integer</p>`;
+        html += `<p class="error">base _r_quantisationregion line count (${linesCount} to ${linesCountInt} differs by > 10%) calculation is not near integer</p>`;
       }
 
       // calculate the number of lines on the screen.
-      let colsCount = base.width / baseLineHeight;
+      let colsCount = (base.width / baseLineHeight) * (16/9);
       let colsCountInt = Math.round(colsCount);
       if (Math.abs(colsCount - colsCountInt) > 0.1) {
-        html += `<p class="error">base _r_region cols count (${colsCount} to ${colsCountInt} differs by > 10%) calculation is not near integer</p>`;
+        //html += `<p class="error">base _r_quantisationregion cols count (${colsCount} to ${colsCountInt} differs by > 10%) calculation is not near integer</p>`;
       }
 
       for (let i = 0; i < regionnames.length; i++) {
@@ -1775,7 +1988,7 @@ module.exports = {
         else v = "bottom";
 
         if (countsame < 3) {
-          html += `<p class="error">region ${n} does not share 3 or 4 edges with _r_default</p>`;
+          html += `<p class="error">region ${n} does not share 3 or 4 edges with _r_quantisationregion</p>`;
         }
 
         // check quantisation of the positioning, based on BASE REGION, NOT on p fontsize!!!

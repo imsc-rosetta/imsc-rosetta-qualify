@@ -181,31 +181,65 @@ module.exports = {
         for (var i = 0; i < ev.dataTransfer.items.length; i++) {
           // If dropped items aren't files, reject them
           if (ev.dataTransfer.items[i].kind === "file") {
-            var file = ev.dataTransfer.items[i].getAsFile();
+            let file = ev.dataTransfer.items[i].getAsFile();
             //console.log('... file[' + i + '].name = ' + file.name);
-            reader = new FileReader();
-            reader.onload = (event) => {
-              //console.log(event);
-              //console.log('len:'+event.target.result.length);
-              if (this.qualify && this.qualify.processXml) {
-                this.xmlfilename = `${file.name} - ${event.target.result.length} characters`;
-                this.qualify.processXml(file, event.target.result);
-              }
-              // uses https://unpkg.com/imsc@1.1.0-beta.2/build/umd/imsc.all.min.js
-              if (this.render && this.render.processXml) {
-                this.xmlfilename = `${file.name} - ${event.target.result.length} characters`;
-                this.render.processXml(file, event.target.result);
-              }
-              // uses https://github.com/YellaUmbrella-tv/imscJS/tree/tempmaster
-              // fixes boxing and rubies.
-              if (this.renderPatched && this.renderPatched.processXml) {
-                this.xmlfilename = `${file.name} - ${event.target.result.length} characters`;
-                this.renderPatched.processXml(file, event.target.result);
-              }
-              
-            };
-            //console.log(file);
-            reader.readAsText(file);
+            let ext = file.name.toLowerCase().split('.').pop();
+
+            switch(ext){
+              case 'ttml':
+              case 'imsc':
+              case 'imscr':
+              case 'xml':{
+                let reader = new FileReader();
+                reader.onload = async (event) => {
+                  let parsed;
+                  //console.log(event);
+                  //console.log('len:'+event.target.result.length);
+                  if (this.qualify && this.qualify.processXml) {
+                    this.xmlfilename = `${file.name} - ${event.target.result.length} characters`;
+                    parsed = await this.qualify.processXml(file, event.target.result);
+                  }
+                  // uses https://unpkg.com/imsc@1.1.0-beta.2/build/umd/imsc.all.min.js
+                  if (this.render && this.render.processXml) {
+                    this.xmlfilename = `${file.name} - ${event.target.result.length} characters`;
+                    this.render.processXml(file, event.target.result, parsed);
+                  }
+                  // uses https://github.com/YellaUmbrella-tv/imscJS/tree/tempmaster
+                  // fixes boxing and rubies.
+                  if (this.renderPatched && this.renderPatched.processXml) {
+                    this.xmlfilename = `${file.name} - ${event.target.result.length} characters`;
+                    this.renderPatched.processXml(file, event.target.result, parsed);
+                  }
+                  
+                };
+                //console.log(file);
+                reader.readAsText(file);
+              } break;
+
+              case 'md':{
+                try {
+                  let splt = file.name.toLowerCase().split('.');
+                  splt.pop();
+                  let desc = splt.pop();
+                  if (desc === 'descr'){
+                    let reader = new FileReader();
+                    reader.onload = (event) => {
+                      console.log('read description file',event.target.result);
+
+                      if (this.render && this.render.adddescrfile) {
+                        this.render.adddescrfile(file, event.target.result)
+                      }
+                      if (this.renderPatched && this.renderPatched.adddescrfile) {
+                        this.renderPatched.adddescrfile(file, event.target.result)
+                      }
+                    }
+                    reader.readAsText(file);
+                  }
+                } catch(e){
+
+                }
+              } break;
+            }
           }
         }
       } else {

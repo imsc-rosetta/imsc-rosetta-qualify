@@ -350,7 +350,7 @@ module.exports = {
       zip.file('imscr/'+this.orgfname, this.xml);
       if (this.descfile){
         // with the descriptive file if present.
-        zip.file('imscr/'+this.descnamebase+'.desc.md', this.descfile);
+        zip.file('imscr/'+this.descnamebase+'.descr.md', this.descfile);
       }
 
       this.vdiv.innerHTML = "";

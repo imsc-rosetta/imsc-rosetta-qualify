@@ -62,6 +62,7 @@ module.exports = {
         r_region: {
           "xml:id": "r_region",
           "tts:wrapOption": "noWrap",
+          "tts:overflow": "visible",
           "itts:fillLineGap": "false",
           "tts:backgroundColor": "transparent",
           "tts:showBackground": "whenActive",
@@ -78,7 +79,11 @@ module.exports = {
           "tts:writingMode": "tbrl",
           "style": "_r_vertical",
         },
-
+        d_default: {
+          "xml:id": "d_default",
+          style: "_d_default",
+          _always: true,
+        },
         d_forced: {
           "xml:id": "d_forced",
           "itts:forcedDisplay": "true",
@@ -485,14 +490,6 @@ module.exports = {
           } },
         },
 
-        d_default: {
-          "xml:id": "d_default",
-          style: { required: false, default: "_d_default", test:(val)=>{
-            if (val !== "_d_default") return false; return true;
-          } },
-          _always: true,
-        },
-
         _d_default: {
           "xml:id": "_d_default",
           style: { required: false, default: "d_outineblack", test:(val)=>{
@@ -678,6 +675,7 @@ module.exports = {
             "tts:writingMode",
             "tts:direction",
             "tts:wrapOption",
+            "tts:overflow",
           ],
           required: ["xml:id"],
         },
@@ -1041,7 +1039,7 @@ module.exports = {
       roundel.innerHTML = `<pre>${this.toHtmlEntities(newxml)}</pre>`;
     },
 
-    testnodeSpaces(node) {
+    testnodeSpaces(node, divname) {
       let html = "";
       let children = node.$$ || [];
       let isp = node["#name"] === "p";
@@ -1050,11 +1048,17 @@ module.exports = {
       let hastext = 0;
       let hasother = 0;
 
+      if (node.$ && node.$['xml:id']){
+        divname = divname || '';
+        if (divname) divname += ','
+        divname = divname + node["#name"]+':'+node.$['xml:id'];
+      }
+
       for (let i = 0; i < children.length; i++) {
         let child = children[i];
 
         if (isp && child["#name"] === "__text__") {
-          html += `<p class="error">Text or spaces in p</p>`;
+          html += `<p class="error">Text or spaces not allowed in ${divname}:p is [<pre>${child["_"]}</pre>]</p>`;
           this.errors.textInP.count++;
         }
 
@@ -1063,11 +1067,11 @@ module.exports = {
           else hasother++;
         }
 
-        html += this.testnodeSpaces(child);
+        html += this.testnodeSpaces(child, divname);
       }
 
       if (isspan && hastext && hasother) {
-        html += `<p class="error">span contains both text and other elements</p>`;
+        html += `<p class="error">span contains both text and other elements in ${divname}</p>`;
         this.errors.textPlusInS.count++;
       }
       return html;
@@ -1216,6 +1220,8 @@ module.exports = {
       let req = this.attributes[type].required.slice(0);
       let opt = this.attributes[type].optional.slice(0);
       for (let i = 0; i < attribs.length; i++) {
+        // ignore our attributes we add..  e.g. '_use'
+        if (attribs[i].startsWith('_')) continue;
         let x = req.indexOf(attribs[i]);
         if (x < 0) {
           x = opt.indexOf(attribs[i]);

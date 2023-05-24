@@ -268,12 +268,14 @@ module.exports = {
       if (this.descnamebase && this.descnamebase.toLowerCase() !== this.filename.toLowerCase()){
         window.alert(`Description file name (${this.descnamebase.toLowerCase()}.md) and Rosetta file name (${this.filename.toLowerCase()}.imscr) mismatch - descriptions will be cleared`);
         this.descriptions = {};  
+        this.descfile = '';
+        this.descnamebase = '';
       }
 
       this.descriptions = this.descriptions || {};
       if (this.descriptions){
         let descrpath = this.orgfname+'.md';
-        let descrpathhtml =  this.orgfname+'.html';
+        let descrpathhtml =  'html/'+this.orgfname+'.html';
         let imagesfolder = 'images/'+this.orgfname+'/';
 
         let html = `<!doctype html>\n<html>\n  <head>\n    <title>${this.orgfname}</title>\n  </head>\n  <body>\n`;
@@ -288,7 +290,7 @@ module.exports = {
 
         html += `    <p><a href="./imscr/${this.orgfname}">Download ${this.orgfname}</a></p>\n`;
 
-        md+= `## Complete file (click expand to see all) (download)[./imscr/${this.orgfname}]\n\n`;
+        md+= `## Complete file (click expand to see all) [download](./imscr/${this.orgfname})\n\n`;
         let xml = this.xml;
         md += `<details><summary>Expand: ${this.orgfname}</summary>\n\n`;
         md += '```\n' + xml + '\n```\n\n</details>\n\n';
@@ -331,7 +333,7 @@ module.exports = {
           if (image){
             md += `#### Resulting Image\n`;
             md += `\n<img src="./${image}" width="600"/>\n`;
-            html += `    <img src="./${image}" width="600"/>\n`;
+            html += `    <img src="../${image}" width="600"/>\n`;
           }
         }
         md += '\n\n';
@@ -346,6 +348,10 @@ module.exports = {
 
       // finally add the sample itself in the /imscr folder.
       zip.file('imscr/'+this.orgfname, this.xml);
+      if (this.descfile){
+        // with the descriptive file if present.
+        zip.file('imscr/'+this.descnamebase+'.desc.md', this.descfile);
+      }
 
       this.vdiv.innerHTML = "";
       this.timeindex = 0;
@@ -362,6 +368,7 @@ module.exports = {
 
     // add an .descr.md file which describes the imscr
     adddescrfile(file, descriptions){
+      this.descfile = descriptions;
       this.descnamebase = file.name;
       this.descnamebase = this.descnamebase.split('.');
       this.descnamebase.pop();
@@ -375,16 +382,17 @@ module.exports = {
       if (descriptions.startsWith('#')){
         descriptions = '\n'+descriptions;
       }
+      descriptions = descriptions.replaceAll('\r\n', '\n');
       let descs = descriptions.split('\n# ');
       console.log(descs);
       
       this.descriptions = {};
       for (let i = 0; i < descs.length; i++){
-        if (descs[i].startsWith('Outline')){
+        if (descs[i].toLowerCase().startsWith('outline')){
           this.descriptions['outline'] = descs[i].slice('Outline'.length);
         }
-        if (descs[i].startsWith('div ')){
-          let spl = descs[i].split(/\n|\r\n/);
+        if (descs[i].toLowerCase().startsWith('div ')){
+          let spl = descs[i].split('\n');
           let t = spl[0].slice('div '.length);
           spl.shift();
           this.descriptions[t] = spl.join('\n');

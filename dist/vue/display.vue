@@ -428,29 +428,6 @@ module.exports = {
         },
       },
 
-      canChangeStyleAttribute:{
-        "tts:textOutline": {test:(val)=>{
-          // "#000000 0.05em"
-          if (!val.startsWith('#')) return false;
-          if (!val.endsWith('em')) return false;
-          let splt = val.split(' ');
-          if (splt.length !== 2) return false;
-          return true;
-        }},
-        "tts:color": {test:(val)=>{
-          if (!val.startsWith('#')) return false;
-          let splt = val.split(' ');
-          if (splt.length !== 1) return false;
-          return true;
-        }},
-        "tts:backgroundColor": {test:(val)=>{
-          if (!val.startsWith('#')) return false;
-          let splt = val.split(' ');
-          if (splt.length !== 1) return false;
-          return true;
-        }},
-      },
-
       // these styles can be changed...
       // items which are true are required to be present.
       // items which are false are optional.
@@ -737,6 +714,42 @@ module.exports = {
     };
   },
   methods: {
+    canChangeStyleAttribute:{
+      "tts:textOutline": {test:(val)=>{
+        // "#000000 0.05em"
+        if (!val.startsWith('#')) return false;
+        if (!val.endsWith('em')) return false;
+        let splt = val.split(' ');
+        if (splt.length !== 2) return false;
+        let colour = splt[0].slice(1);
+        let number = splt[1].slice(0, -2);
+        if (number != +number) return false;
+        if (colour.length !== 6) return false;
+        if (!this.isHexUpper(colour)) return false;
+        return true;
+      }},
+      "tts:color": {test:(val)=>{
+        if (!val.startsWith('#')) return false;
+        let splt = val.split(' ');
+        if (splt.length !== 1) return false;
+        val = val.slice(1);
+        if (val.length !== 6) return false;
+        if (!this.isHexUpper(val)) return false;
+        return true;
+      }},
+      "tts:backgroundColor": {test:(val)=>{
+        if (!val.startsWith('#')) return false;
+        let splt = val.split(' ');
+        if (splt.length !== 1) return false;
+        val = val.slice(1);
+        if ((val.length !== 6) && (val.length !== 8)) return false;
+        if (!this.isHexUpper(val)) return false;
+        return true;
+      }},
+    },
+
+
+
     xmlbuilder() {
       var builder,
         defaults,
@@ -915,6 +928,10 @@ module.exports = {
       return txt.replace(/./gm, (s) => {
         return s.match(/[a-z0-9\s]+/i) ? s : "&#" + s.charCodeAt(0) + ";";
       });
+    },
+
+    isHexUpper(str) {
+      return Boolean(str.match(/^0x[0-9A-F]+$/i))
     },
 
     clear() {

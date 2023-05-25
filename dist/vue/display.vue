@@ -63,8 +63,7 @@ module.exports = {
           "xml:id": "r_default",
           "tts:wrapOption": "noWrap",
           "tts:overflow": "visible",
-          "itts:fillLineGap": "false",
-          "tts:backgroundColor": "transparent",
+          "tts:backgroundColor": "#00000000",
           "tts:showBackground": "whenActive",
           "tts:fontStyle": "normal",
           "tts:fontWeight": "normal",
@@ -108,14 +107,17 @@ module.exports = {
         // line alignment
         p_al_start: {
           "xml:id": "p_al_start",
+          "ebutts:multiRowAlign": "start",
           "tts:textAlign": "start",
         },
         p_al_center: {
           "xml:id": "p_al_center",
+          "ebutts:multiRowAlign": "center",
           "tts:textAlign": "center",
         },
         p_al_end: {
           "xml:id": "p_al_end",
+          "ebutts:multiRowAlign": "end",
           "tts:textAlign": "end",
         },
         /*p_al_center: {
@@ -428,6 +430,41 @@ module.exports = {
         },
       },
 
+
+      canChangeStyleAttribute:{
+        "tts:textOutline": {test:(val)=>{
+          // "#000000 0.05em"
+          if (!val.startsWith('#')) return false;
+          if (!val.endsWith('em')) return false;
+          let splt = val.split(' ');
+          if (splt.length !== 2) return false;
+          let colour = splt[0].slice(1);
+          let number = splt[1].slice(0, -2);
+          if (number != +number) return false;
+          if (colour.length !== 6) return false;
+          if (!window.isHexUpper(colour)) return false;
+          return true;
+        }},
+        "tts:color": {test:(val)=>{
+          if (!val.startsWith('#')) return false;
+          let splt = val.split(' ');
+          if (splt.length !== 1) return false;
+          val = val.slice(1);
+          if (val.length !== 6) return false;
+          if (!window.isHexUpper(val)) return false;
+          return true;
+        }},
+        "tts:backgroundColor": {test:(val)=>{
+          if (!val.startsWith('#')) return false;
+          let splt = val.split(' ');
+          if (splt.length !== 1) return false;
+          val = val.slice(1);
+          if ((val.length !== 6) && (val.length !== 8)) return false;
+          if (!window.isHexUpper(val)) return false;
+          return true;
+        }},
+      },
+
       // these styles can be changed...
       // items which are true are required to be present.
       // items which are false are optional.
@@ -525,10 +562,15 @@ module.exports = {
             if (!val.endsWith('c')) return false;
             return true;
           } },
-          "itts:fillLineGap": { required: false, default: "false", test: (val)=>{
+          "itts:fillLineGap": { required: true, default: "false", test: (val)=>{
             if (val !== 'true' && val !== 'false') return false;
             return true;
           } },
+          "tts:luminanceGain": { required: true, default: "1.0", test: (val)=>{
+            if (val != +val) return false;
+            return true;
+          } },
+          
           style: { required: true, default: "s_fg_white", test:(val)=>{
             let splt = val.split(' ');
             let colour = 0;
@@ -653,6 +695,7 @@ module.exports = {
             "tts:direction",
             "tts:wrapOption",
             "tts:overflow",
+            "tts:luminanceGain",
           ],
           required: ["xml:id"],
         },
@@ -714,39 +757,6 @@ module.exports = {
     };
   },
   methods: {
-    canChangeStyleAttribute:{
-      "tts:textOutline": {test:(val)=>{
-        // "#000000 0.05em"
-        if (!val.startsWith('#')) return false;
-        if (!val.endsWith('em')) return false;
-        let splt = val.split(' ');
-        if (splt.length !== 2) return false;
-        let colour = splt[0].slice(1);
-        let number = splt[1].slice(0, -2);
-        if (number != +number) return false;
-        if (colour.length !== 6) return false;
-        if (!this.isHexUpper(colour)) return false;
-        return true;
-      }},
-      "tts:color": {test:(val)=>{
-        if (!val.startsWith('#')) return false;
-        let splt = val.split(' ');
-        if (splt.length !== 1) return false;
-        val = val.slice(1);
-        if (val.length !== 6) return false;
-        if (!this.isHexUpper(val)) return false;
-        return true;
-      }},
-      "tts:backgroundColor": {test:(val)=>{
-        if (!val.startsWith('#')) return false;
-        let splt = val.split(' ');
-        if (splt.length !== 1) return false;
-        val = val.slice(1);
-        if ((val.length !== 6) && (val.length !== 8)) return false;
-        if (!this.isHexUpper(val)) return false;
-        return true;
-      }},
-    },
 
 
 
@@ -928,10 +938,6 @@ module.exports = {
       return txt.replace(/./gm, (s) => {
         return s.match(/[a-z0-9\s]+/i) ? s : "&#" + s.charCodeAt(0) + ";";
       });
-    },
-
-    isHexUpper(str) {
-      return Boolean(str.match(/^0x[0-9A-F]+$/i))
     },
 
     clear() {
@@ -1841,7 +1847,7 @@ module.exports = {
                   }
                 } else {
                   if (!this.canChangeStyleAttribute[keys2[i]].test(s[keys2[i]])){
-                    `<p class="error">invalid attribute on style ${n}: value ${keys2[i]}="${s[keys2[i]]}"</p>`;
+                    html += `<p class="error">invalid attribute on style ${n}: value ${keys2[i]}="${s[keys2[i]]}"</p>`;
                     pass = false;
                   }
                 }
@@ -2067,6 +2073,14 @@ module.exports = {
     this.$emit("mounted", "qualify", this);
     //console.log("mounted controller");
     this.xml2js = window.xml2js;
+    window.isHexUpper = (str)=>{
+      let chars = str.split('');
+      for (let i = 0; i < chars.length; i++){
+        if (!("0123456789ABCDEF".includes(chars[i]))) return false;
+      }
+      return true;
+    };
+
   },
   destroyed() {
     clearInterval(this.interval);

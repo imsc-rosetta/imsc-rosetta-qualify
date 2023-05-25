@@ -59,8 +59,8 @@ module.exports = {
 
       // these styles are constants...
       defaultConstantStyles: {
-        r_region: {
-          "xml:id": "r_region",
+        r_default: {
+          "xml:id": "r_default",
           "tts:wrapOption": "noWrap",
           "tts:overflow": "visible",
           "itts:fillLineGap": "false",
@@ -1130,9 +1130,9 @@ module.exports = {
       // check for required styles on elements
       switch(eltype){
         case 'region':{
-          if (!s.includes('r_region')){
+          if (!s.includes('r_default')){
             if (invalid) invalid += ',';
-            invalid += 'missing r_region';
+            invalid += 'missing r_default';
           }
         } break;
         case 'div':{

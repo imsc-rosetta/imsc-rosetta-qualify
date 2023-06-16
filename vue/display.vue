@@ -69,7 +69,6 @@ module.exports = {
           "tts:fontWeight": "normal",
           //"tts:color": "white",
           "tts:fontFamily": "proportionalSansSerif",
-          "tts:textAlign": "center",
           style: "_r_default",
           _always: true,
         },
@@ -571,16 +570,18 @@ module.exports = {
             return true;
           } },
           
-          style: { required: true, default: "s_fg_white", test:(val)=>{
+          style: { required: true, default: "s_fg_white p_al_center", test:(val)=>{
             let splt = val.split(' ');
             let colour = 0;
+            let al = 0;
             for (let i = splt.length-1; i >= 0; i--){
               let s = splt[i];
               if (s.startsWith("s_fg_")) {splt.pop(); colour++};
-              if (s.startsWith("p_al_")) splt.pop();
+              if (s.startsWith("p_al_")) {splt.pop(); al++};
             }
             if (splt.length) return false;
             if (colour !== 1) return false;
+            if (al !== 1) return false;
             return true; 
           } },
           _always: true,

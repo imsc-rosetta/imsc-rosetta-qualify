@@ -93,11 +93,11 @@ module.exports = {
         },
         d_outline: {
           "xml:id": "d_outline",
-          "tts:textOutline": "#000000 0.05em",
+          "style": "s_outlineblack",
         },
         d_drop: {
           "xml:id": "d_drop",
-          "tts:textOutline": "#000000 0.05em",
+          "style": "s_dropblack",
         },
 
         p_rtl: {
@@ -1287,6 +1287,34 @@ module.exports = {
       return err;
     },
 
+    // xml2js has a bug where it does not make text as "_" in all cicumstances, even when asked.
+    // to get a very consistent json, we fix this.
+    fixxml2jsbug(nodes) {
+      let html = "";
+      if (!Array.isArray(nodes)) {
+        nodes = [nodes];
+      }
+
+      for (let i = 0; i < nodes.length; i++) {
+        // parser bug in xml2js
+        if (typeof nodes[i] === 'string'){
+          nodes[i] = {'_':nodes[i]};
+        }
+        let node = nodes[i];
+
+        let childnames = Object.keys(node);
+        for (let i = 0; i < childnames.length; i++){
+          let childname = childnames[i];
+          if (childname === '$') continue;
+          if (childname === '_') continue;
+          if (childname === '#name') continue;
+          this.fixxml2jsbug(node[childname]);
+        }
+      }
+      return;
+    },
+
+
     testStructure(nodes, path) {
       let html = "";
       if (!Array.isArray(nodes)) {
@@ -1307,7 +1335,7 @@ module.exports = {
           let childname = childnames[i];
           let req = required.indexOf(childname);
           if (req === -1 && !optional.includes(childname)) {
-            if (!optional.includes["any"]) {
+            if (!optional.includes("any")) {
               html += `<p class="error">Child ${childname} not allowed for ${path}</p>`;
             } else {
               html += `<p class="info">Info: Child ${childname} on ${path}</p>`;
@@ -1356,6 +1384,11 @@ module.exports = {
       let styles = {};
       let regions = {};
       let divs = [];
+
+      if (json.tt){
+        this.fixxml2jsbug(json.tt);
+      }
+      json = JSON.parse(JSON.stringify(json));
 
       do {
         html += '<p class="info">Analysing IMSC-Rosetta rules structure</p>';
@@ -1542,7 +1575,8 @@ module.exports = {
             html += '<p class="error">No tt.body element</p>';
             break;
           }
-          let b = json.tt.body[0];
+          // avoid adding _use to the real displayed json
+          let b = JSON.parse(JSON.stringify(json.tt.body[0]));
           if (b._) {
             html +=
               '<p class="error">non whitespace text on tt.body element</p>';

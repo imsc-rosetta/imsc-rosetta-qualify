@@ -8,7 +8,8 @@
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "webpack"
+    "build": "webpack",
+    "run": "node node_modules/light-server/bin/light-server -s ./dist/"
   },
   "keywords": [
     "imsc",
@@ -27,6 +28,7 @@
   },
   "devDependencies": {
     "webpack": "^5.74.0",
-    "webpack-cli": "^4.10.0"
+    "webpack-cli": "^4.10.0",
+    "light-server":""
   }
 }

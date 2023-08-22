@@ -8,11 +8,16 @@ Open https://imsc-rosetta.github.io/imsc-rosetta-qualify/ in a web browser (e.g.
 
 Drop a file into the blue box to check the XML structure, round trip of the file through XML parsing to XML building, and select the Render tab to see the render of the file along with a display of each div.
 
-If you have a name.desc.md file to go with the .imscr file, then the render tab will show the descritpions of the divs as you navigate through them.
+If you have a name.desc.md file to go with the .imscr file, then the render tab will show the descriptions of the divs as you navigate through them.
 
-If you wish to generate images and a .md which lists the divs and images, then drop either an imscr file or an imscr file and a descr.md file, and then click on 'Generate Images' in Lrgacy Render File or Patched Render File.  This will generate a zip containing the imscr, a .md file, and a set of images in a subdirectory of images/(imscr filename)/ - this is used to create the sample descriptions for the IMAC Rosetta specification repository.
+If you wish to generate images and a .md which lists the divs and images, then drop either an imscr file or an imscr file and a descr.md file, and then click on 'Generate Images' in Legacy Render File or Patched Render File.  This will generate a zip containing the imscr, a .md file, and a set of images in a subdirectory of images/(imscr filename)/ - this is used to create the sample descriptions for the IMAC Rosetta specification repository.
 
 # Mod Record
+
+## 2023-07-19
+
+Added check for `e_` starting `xml:id` for div, and also a check that any `xml:id` does not start with a number (not a comprehensive NameStart check.)
+Added a check that xml:id does not appear in places it should not.
 
 ## 2023-05-23
 
@@ -70,7 +75,10 @@ npm build
 
 to build the base app.
 
-Serve dist/ from a (simple) webserver, else you will encounter CORS errors.
+To serve the website, use 
+```
+npm run run
+```
 
 If you modify only .vue files, then you don't need to rebuild every time.  The build process basically webpacks dependencies and the initial main.js, which then loads the vue SFC (Single-File Component) modules.
 

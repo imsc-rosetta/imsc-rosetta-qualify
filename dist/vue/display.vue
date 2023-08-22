@@ -1073,9 +1073,30 @@ module.exports = {
       let hasother = 0;
 
       if (node.$ && node.$['xml:id']){
+        switch (node["#name"]){
+          case 'span':
+          case 'p':
+          case 'br':
+          case 'body':
+          case 'head':
+          case 'styling':
+          case 'layout': {
+            html += `<p class="error">Unexpected xml:id="${node.$['xml:id']}" on element type ${node["#name"]}</p>`;
+          } break;
+
+          case 'div':
+            if (!node.$['xml:id'].startsWith('e_')){
+              html += `<p class="error">Expected div xml:id to start with "e_" - is xml:id="${node.$['xml:id']}"</p>`;
+            }
+            break;
+        }
         divname = divname || '';
         if (divname) divname += ','
         divname = divname + node["#name"]+':'+node.$['xml:id'];
+        let firstchar = node.$['xml:id'].slice(0, 1);
+        if (!isNaN(firstchar)){
+          html += `<p class="error">xml:id in ${divname} may not start with a numeric character</p>`;
+        }
       }
 
       for (let i = 0; i < children.length; i++) {

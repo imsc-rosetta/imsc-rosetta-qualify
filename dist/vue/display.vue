@@ -966,16 +966,23 @@ module.exports = {
       return html;
     },
 
+    showinel(elid, text){
+      let maxchars = 10000;
+      let xmlel = document.getElementById(elid);
+      xmlel.innerHTML = `<pre>${this.toHtmlEntities(text.slice(0, maxchars))+((text.length > maxchars)?'\n...':'')}</pre>`;
+    },
+
     async processXml(file, xml) {
       this.clear();
 
       this.output = "";
       this.timestart();
 
+      this.maxDisplayedChars = 10000;
+
       let simpleresult;
 
-      let xmlel = document.getElementById("xml");
-      xmlel.innerHTML = `<pre>${this.toHtmlEntities(xml)}</pre>`;
+      this.showinel("xml", xml);
       let parseOptionsFull = {
         async: false,
         attrkey: "$",
@@ -1007,8 +1014,7 @@ module.exports = {
         this.testImscRosettaSpaces(file, xml, result);
         this.output += this.timestamp("End Spaces Check");
         let json = JSON.stringify(result, null, " ");
-        let jsonel = document.getElementById("jsonfull");
-        jsonel.innerHTML = `<pre>${this.toHtmlEntities(json)}</pre>`;
+        this.showinel("jsonfull", json);
       } catch(err){
         // Failed
         let resultsel = document.getElementById("results");
@@ -1028,20 +1034,20 @@ module.exports = {
         //console.log("DoneSimple:");
         //console.dir(result);
 
-        let jsonel = document.getElementById("json");
         this.timestart();
         this.output += this.timestamp("Start Test");
         this.testImscRosetta(file, xml, result);
         this.output += this.timestamp("End Test");
-
+        
         let json = JSON.stringify(result, null, " ");
-        jsonel.innerHTML = `<pre>${this.toHtmlEntities(json)}</pre>`;
+        this.showinel("json", json);
 
         // round trip back to XML
         this.timestart();
         this.output += this.timestamp("Start Export");
         this.processJson(file, result);
         this.output += this.timestamp("End Export");
+
         let resultsel = document.getElementById("results");
         resultsel.innerHTML = resultsel.innerHTML + this.output;
       } catch(err){
@@ -1059,8 +1065,8 @@ module.exports = {
     processJson(file, json) {
       let builder = this.xmlbuilder();
       let newxml = builder(json);
-      let roundel = document.getElementById("round");
-      roundel.innerHTML = `<pre>${this.toHtmlEntities(newxml)}</pre>`;
+
+      this.showinel("round", newxml);
     },
 
     testnodeSpaces(node, divname) {

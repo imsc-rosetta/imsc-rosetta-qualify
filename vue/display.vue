@@ -1422,16 +1422,19 @@ module.exports = {
     checkNamespacing(elementname, node, path){
       let html = "";
       let splt = elementname.split(':');
-      if (splt.length < 2){
-        html += `<p class="error">Element at ${path} should be namespaced</p>`;
+      let namespace = '';
+      if (splt.length === 2){
+        namespace = splt[0];
       }
       // ttm or rosetta allowed without namespace declaration
-      if (splt[0] !== 'rosetta' && splt[0] !== 'ttm'){
+      if (namespace !== 'rosetta' && namespace !== 'ttm'){
         if (!node['$']){
           html += `<p class="error">Element at ${path} should contain an xmlns attribute</p>`;
         } else {
-          if (!node['$'][`xmlns:${splt[0]}`] ){
-            html += `<p class="error">Element at ${path} should contain an xmlns:${splt[0]} attribute</p>`;
+          let tag = 'xmlns';
+          if (namespace) tag = `xmlns:${splt[0]}`;
+          if (!node['$'][tag] ){
+            html += `<p class="error">Element at ${path} should contain a ${tag} attribute</p>`;
           } else {
             html += `<p class="info">Info: Child ${elementname} at ${path}</p>`;
           }

@@ -728,7 +728,10 @@ module.exports = {
         },
         "tt-head-metadata": {
           required: ["rosetta:format", "rosetta:version"],
-          optional: ["any"],
+          optional: ["rosetta:role","rosetta:startOfProgramme","rosetta:startOfMedia",
+            "rosetta:created","rosetta:modified","rosetta:originator","rosetta:originalFormat",
+            "rosetta:transformationProduct","rosetta:transformationProductVersion","any"],
+          childrenmustbenamespaced:true,
         },
         "tt-head-styling": {
           required: ["style"],
@@ -743,10 +746,10 @@ module.exports = {
           optional: ["$", "metadata", "p"],
         },
         "tt-body-div-metadata": {
-          optional: ["$"],
+          required: ["$"],
         },
-        "tt-body-div-p": {
-          optional: ["$", "span"],
+        "tt-body-div-metadata-$": { // method to have required or optional atrtributes for an element at a location
+          required: ["rosetta:comment"], // required attributes
         },
         "tt-body-div-p-span": {
           optional: ["$", "span", "br", "_"],
@@ -1135,6 +1138,34 @@ module.exports = {
 
       do {
         html += '<p class="info">Analysing base structure</p>';
+
+        // "compliant XML parsers must, before parsing, translate CRLF and any CR not followed by a LF to a single LF"
+        let noCR = xml.replace(/\r\n/g, '\n');
+        noCR = noCR.replace(/\r/g, '\n');
+        // get first line only.  the parser does not give us this.
+        let line1 = noCR.split('\n')[0];
+        if (!line1.startsWith('<?xml ')){
+          html += '<p class="error">No xml header</p>';
+        } else {
+          // we want <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+          if (!line1.includes(' version="1.0"')){
+            html += '<p class="error">No version in xml header</p>';
+          }
+          if (!line1.includes(' encoding="UTF-8"')){
+            html += '<p class="error">No encoding="UTF-8" in xml header</p>';
+          }
+          if (!line1.includes(' standalone="yes"')){
+            html += '<p class="error">No standalone="yes" in xml header</p>';
+          }
+          if (!line1.endsWith('?>')){
+            html += '<p class="error">XML header incorrectly closed</p>';
+          }
+        }
+
+        if (xml.includes(' />')){
+          html += '<p class="warn">XML contains closed elements ending " />" - the space is unnecessary and not desirable</p>';
+        }
+
         if (!json.tt) {
           html += '<p class="error">No tt element</p>';
           break;
@@ -1361,23 +1392,50 @@ module.exports = {
         let required = (this.children[path].required || []).slice();
         for (let i = 0; i < childnames.length; i++) {
           let childname = childnames[i];
+          let newpath = path + "-" + childname;
           let req = required.indexOf(childname);
           if (req === -1 && !optional.includes(childname)) {
             if (!optional.includes("any")) {
               html += `<p class="error">Child ${childname} not allowed for ${path}</p>`;
             } else {
-              html += `<p class="info">Info: Child ${childname} on ${path}</p>`;
+              for (let i = 0; i < node[childname].length; i++){
+                if (this.children[path].childrenmustbenamespaced){
+                  html += this.checkNamespacing(childname, node[childname][i], newpath);
+                } else {
+                  html += `<p class="info">Info: Child ${childname} on ${path}</p>`;
+                }
+              }
             }
           }
           if (req >= 0) required.splice(req, 1);
 
-          let newpath = path + "-" + childname;
           if (this.children[newpath])
             html += this.testStructure(node[childname], newpath);
         }
 
         if (required.length)
           html += `<p class="error">Required Child(ren) ${required.toString()} missing for ${path}</p>`;
+      }
+      return html;
+    },
+
+    checkNamespacing(elementname, node, path){
+      let html = "";
+      let splt = elementname.split(':');
+      if (splt.length < 2){
+        html += `<p class="error">Element at ${path} should be namespaced</p>`;
+      }
+      // ttm or rosetta allowed without namespace declaration
+      if (splt[0] !== 'rosetta' && splt[0] !== 'ttm'){
+        if (!node['$']){
+          html += `<p class="error">Element at ${path} should contain an xmlns attribute</p>`;
+        } else {
+          if (!node['$'][`xmlns:${splt[0]}`] ){
+            html += `<p class="error">Element at ${path} should contain an xmlns:${splt[0]} attribute</p>`;
+          } else {
+            html += `<p class="info">Info: Child ${elementname} at ${path}</p>`;
+          }
+        }
       }
       return html;
     },
@@ -1464,6 +1522,23 @@ module.exports = {
               html +=
                 '<p class="error">Attributes on tt.head.metadata.rosetta:version element</p>';
               break;
+            }
+
+            if (m["rosetta:startOfProgramme"]) {
+              if (m["rosetta:startOfProgramme"][0] && m["rosetta:startOfProgramme"][0]['_']){
+                let t = this.checkTime(m["rosetta:startOfProgramme"][0]['_']);
+                if (isNaN(t)){
+                  html += `<p class="warn">rosetta:startOfProgramme ${m["rosetta:startOfProgramme"][0]['_']} not NN:NN:NN.NNN</p>`;
+                }
+              }
+            }
+            if (m["rosetta:startOfMedia"]) {
+              if (m["rosetta:startOfMedia"][0] && m["rosetta:startOfMedia"][0]['_']){
+                let t = this.checkTime(m["rosetta:startOfMedia"][0]['_']);
+                if (isNaN(t)){
+                  html += `<p class="warn">rosetta:startOfMedia ${m["rosetta:startOfMedia"][0]['_']} not NN:NN:NN.NNN</p>`;
+                }
+              }
             }
           }
           {

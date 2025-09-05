@@ -334,27 +334,35 @@ module.exports = {
 
         s_noneblack: {
           "xml:id": "s_noneblack",
+          _optional:{"tts:textOutline":true},
         },
         s_nonered: {
           "xml:id": "s_nonered",
+          _optional:{"tts:textOutline":true},
         },
         s_noneyellow: {
           "xml:id": "s_noneyellow",
+          _optional:{"tts:textOutline":true},
         },
         s_nonegreen: {
           "xml:id": "s_nonegreen",
+          _optional:{"tts:textOutline":true},
         },
         s_nonecyan: {
           "xml:id": "s_nonecyan",
+          _optional:{"tts:textOutline":true},
         },
         s_noneblue: {
           "xml:id": "s_noneblue",
+          _optional:{"tts:textOutline":true},
         },
         s_nonemagenta: {
           "xml:id": "s_nonemagenta",
+          _optional:{"tts:textOutline":true},
         },
         s_nonewhite: {
           "xml:id": "s_nonewhite",
+          _optional:{"tts:textOutline":true},
         },
 
         s_inline_block: {
@@ -1245,7 +1253,15 @@ module.exports = {
               }
             } break;
             case 'div':{
-              if (!s[i].startsWith('d_')){
+              let valid = false;
+              if (s[i].startsWith('d_')){
+                valid = true;
+              } else {
+                if (s[i].startsWith('s_none') || s[i].startsWith('s_outline') || s[i].startsWith('s_drop')){
+                  valid = true;
+                }
+              }
+              if (!valid){
                 if (invalid) invalid += ',';
                 invalid += s[i];
                 continue;
@@ -1965,7 +1981,9 @@ module.exports = {
         }
 
         let checkextras = true;
+        let styleDefn;
         if (this.defaultConstantStyles[n]) {
+          styleDefn = this.defaultConstantStyles[n];
           let keys1 = Object.keys(s);
           let keys2 = Object.keys(this.defaultConstantStyles[n]);
           for (let i = 0; i < keys2.length; i++) {
@@ -1997,6 +2015,7 @@ module.exports = {
           }
         } else {
           if (this.defaultChangeableStyles[n]) {
+            styleDefn = this.defaultChangeableStyles[n];
             let keys1 = Object.keys(s);
             let keys2 = Object.keys(this.defaultChangeableStyles[n]);
             for (let i = 0; i < keys2.length; i++) {
@@ -2044,11 +2063,16 @@ module.exports = {
           let keys2 = Object.keys(s);
           for (let i = 0; i < keys2.length; i++) {
             if (!keys2[i].startsWith("_")) {
-              html += `<p class="error">extra attribute on style ${n} : ${
-                keys2[i]
-              }="${s[keys2[i]]}"</p>`;
-              delete s[keys2[i]];
-              pass = false;
+              if (styleDefn && styleDefn._optional && styleDefn._optional[keys2[i]]){
+                // if this is an allowed optional for this style,  then no issue
+                console.log(`allowed optional ${keys2[i]} on ${n}`);
+              } else {
+                html += `<p class="error">extra attribute on style ${n} : ${
+                  keys2[i]
+                }="${s[keys2[i]]}"</p>`;
+                delete s[keys2[i]];
+                pass = false;
+              }
             }
           }
         }

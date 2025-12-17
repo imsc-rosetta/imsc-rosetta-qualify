@@ -6,13 +6,34 @@ A test application to qualify IMSC-Rosetta files by Simon Hailes at YellaUmbrell
 
 Open https://imsc-rosetta.github.io/imsc-rosetta-qualify/ in a web browser (e.g. Chrome).
 
-Drop a file into the blue box to check the XML structure, round trip of the file through XML parsing to XML building, and select the Render tab to see the render of the file along with a display of each div.
+Drop a file into the blue box to check the XML structure, round trip of the file through XML parsing to XML building, and select the Legacy Render or Patched Render tab to see the render of the file along with a display of each div.
 
 If you have a name.desc.md file to go with the .imscr file, then the render tab will show the descriptions of the divs as you navigate through them.
 
-If you wish to generate images and a .md which lists the divs and images, then drop either an imscr file or an imscr file and a descr.md file, and then click on 'Generate Images' in Legacy Render File or Patched Render File.  This will generate a zip containing the imscr, a .md file, and a set of images in a subdirectory of images/(imscr filename)/ - this is used to create the sample descriptions for the IMAC Rosetta specification repository.
+If you wish to generate images and a .md which lists the divs and images, then drop either an imscr file or an imscr file and a .descr.md file, and then click on 'Generate Images' in Legacy Render File or Patched Render File.  This will generate a zip containing the imscr, a .md file, and a set of images in a subdirectory of images/(imscr filename)/ - this is used to create the sample descriptions for the IMSC Rosetta specification repository.
+
+There are two different image render options.  
+
+## Generate a zip of images using SVG - some features not supported
+This will render faster, and at 1920x1080, but certain features of the IMSC renderer are not supported (e.g. box padding).
+
+## Generate a zip of images - using screen capture - more accurate (Chrome/Edge only)
+This will render more slowly, and uses Chrome/Edge screen capture to grab accurate images, but at a reduced resolution.
+
 
 # Mod Record
+
+## 2025-12-17
+
+Added checks to d_none, D_outline, d_drop if s_nonexxx, s_outlinexxx or s_dropxxx are used on span.
+
+Allow s_nonexxx to optionally contain tts:textOutline - this goes with an IMSCR definition change to fix the specified use of text without outline.
+
+Enhanced a few errors with more description.
+
+Hide main tabs until a file is dropped, and tab the result page for easier reading.
+
+Added screen capture based image generation.
 
 ## 2023-07-19
 
@@ -98,4 +119,4 @@ Copyright Simon Hailes, Yella BVBA
 
 Provided under the [Apache-2.0](https://www.apache.org/licenses/LICENSE-2.0) license
 
-[Yella Umbrella](https://yellaumbrella.tv) provides software and expertise to the subtitling/audio description and dubbing industry.  In support of this industry and with the collaboration of XXXXXXXXXXX, IMSC-Rosetta represents a step towards a normalisation of TTML usage, and recognition of the requirements for quality translation subtitles.  IMSC-Rosetta actually represents more than 30 years of experience, distilled into an open and usable subtitle format, and we hope that it helps the industry in general raise the quality of subtitle presentation across the board.
+[Yella Umbrella](https://www.yellaumbrella.com) provides software and expertise to the subtitling/audio description and dubbing industry.  In support of this industry and with the collaboration of XXXXXXXXXXX, IMSC-Rosetta represents a step towards a normalisation of TTML usage, and recognition of the requirements for quality translation subtitles.  IMSC-Rosetta actually represents more than 30 years of experience, distilled into an open and usable subtitle format, and we hope that it helps the industry in general raise the quality of subtitle presentation across the board.

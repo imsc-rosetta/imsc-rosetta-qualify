@@ -71,7 +71,7 @@
       <h3>About</h3>
       <p>
         A simple web app to qualify
-        <a href="https://github.com/imsc-rosetta" target="_blank"
+        <a href="https://github.com/imsc-rosetta/imsc-rosetta-specification" target="_blank"
           >IMSC-Rosetta</a
         >
         by Simon Hailes at
@@ -103,6 +103,12 @@
         <a href="https://github.com/sandflow/imscJS" target="_blank">imscJS</a>,
         Pierre's very competent and comprehensive IMSC renderer.
       </p>
+      <p>Instructions:<br/>Drag and drop an IMSCR file ontp the blue box at the top.  The application will check the file for IMSCR complience, and report abnormalities.  You can also view a file (indeed, most IMSC files will render correctly, even if not IMSCR), and generate a set of images representing that file along with an HTML referencing those images, and a .md file referencing those images.</p>
+      <p>See
+       <a href="https://github.com/imsc-rosetta/imsc-rosetta-qualify" target="_blank">the github source</a>
+       if you are so inclined.
+      </p>
+      <p>© Simon Hailes, YellaUmbrella, 17/12/2025</p>
     </div>
   </div>
 </template>

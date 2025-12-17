@@ -17,13 +17,16 @@
 
 <template>
   <div>
-    <div class="render" :id="renderId"></div>
-    <p>ISDs generated: {{ tmax }} <button @click="saveAsPNG();">GenerateImages</button></p>
+    <div class="render" :id="renderId" style="isolation: isolate;"></div>
+    <p>ISDs generated: {{ tmax }} <button @click="saveAsPNG();">Generate a zip of images using SVG - some features noty supported</button></p>
+    <p>ISDs generated: {{ tmax }} <button @click="saveAsPNG2();">Generate a zip of images - using screen capture - more accurate (Chrome/Edge only)</button></p>
     <div>
       <span>{{ selectedTime }} </span><span>Rendered using: {{imscVersion}}</span><input type="range" min="0" v-bind:max="tmax" v-model="timeindex" />
     </div>
+    <video id="video" autoplay playsinline style="/*left:1000%; top:1000%;*/"></video>
     <div class="xml"><p v-html="descrDisplay"></p><pre v-html="xmlDisplay"></pre></div>
   </div>
+
 </template>
 
 <script>
@@ -68,7 +71,7 @@ module.exports = {
         this.vdiv.innerHTML = "";
         //(isd, element, imgResolver, eheight, ewidth, displayForcedOnlyMode, errorHandler, previousISDState, enableRollUp)
         // force size as our div is not on screen for first render
-        this.imsc.renderHTML(isd, this.vdiv, null, 480, 854);
+        this.imsc.renderHTML(isd, this.vdiv, null, this.vdiv.height, this.vdiv.width);
       } else {
         setTimeout(() => {
           this.timeindex = oldt;
@@ -366,6 +369,261 @@ module.exports = {
       }, 2000);
     },
 
+
+    async saveAsPNG2() {
+      let defdims = {'h': 1080/2, 'w': 1920/2};
+
+      let imageNames = {};
+
+      let dims = defdims;
+      let exp_width = dims.w;
+      let exp_height = dims.h;
+      //let vdiv = document.getElementById('renderPatched-div');
+
+      //let vdiv = document.getElementById(this.renderId);
+
+      this.vdiv.classList.remove('render');
+      this.vdiv.classList.add('render2');
+
+
+      /*
+      let stream = null;
+      let track = null;
+      let ctx = null;
+      let frames = 0;
+      let maxframes = 10;
+      let w, h;
+
+      const elem = document.querySelector("#myDiv");
+      const vid = document.querySelector("#video");
+      const canvas = document.getElementById("canvas");
+      const rect = elem.getBoundingClientRect(); // element dimensions
+      */
+
+      //this.vdiv.hidden = true;
+      let zip = new JSZip();
+      var canvas = document.createElement("canvas");
+      var ctx = canvas.getContext('2d');
+      const vid = document.querySelector("#video");
+
+      canvas.height = exp_height;
+      canvas.width = exp_width;
+      let w = exp_width;
+      let h = exp_height;
+      vid.style.width = ''+exp_width+'px';
+      vid.style.height = ''+exp_height+'px';
+      vid.width = w;
+      vid.height = h;
+
+
+      let constraints = {
+        audio: false,
+        video: {
+          width: { ideal: w, max: w },
+          height: { ideal: h, max: h },
+          resizeMode: 'none',
+        },
+        logicalSurface: true, // don't get the mouse pointer, for example
+        preferCurrentTab: true
+      };
+
+      const stream = await navigator.mediaDevices.getDisplayMedia(constraints);
+      const track = stream.getVideoTracks()[0];
+
+      this.vdiv.style.width = ''+exp_width+'px';
+      this.vdiv.style.height = ''+exp_height+'px';
+      this.vdiv.width = w;
+      this.vdiv.height = h;
+
+      const restrictionTarget = await RestrictionTarget.fromElement(this.vdiv);
+
+      console.log(restrictionTarget);
+      await track.restrictTo(restrictionTarget);
+
+      function asyncwait(ms){
+        return new Promise((resolve) => {
+          setTimeout(()=>{
+            resolve();
+          }, ms);
+        });
+      }
+
+      vid.srcObject = stream;
+      await new Promise((resolve) => {
+        vid.onloadedmetadata = ()=>{
+          resolve();
+        };
+      });
+      await vid.play();
+
+      // let let the video play for 2s before we start to use it.
+      await asyncwait(2000);
+
+      let render_one = (offset)=>{
+        return new Promise(async (resolve)=>{
+          //this.vdiv = document.getElementById(this.renderId);
+          if (this.vdiv) {
+            let isd = this.imsc.generateISD(this.doc, offset);
+            this.vdiv.innerHTML = "";
+            //(isd, element, imgResolver, eheight, ewidth, displayForcedOnlyMode, errorHandler, previousISDState, enableRollUp)
+            // force size as our div is not on screen for first render
+            this.imsc.renderHTML(isd, this.vdiv, null, h, w);
+          }
+          
+
+          /*
+          var url = "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svgser);
+
+          var img = new Image();
+          img.onload = ()=>{
+              ctx.drawImage(img, 0, 0);
+              let data = canvas.toDataURL("image/png");
+              let fname = offset + ".png";
+              imageNames[offset] = fname;
+              let fpath = 'images/'+this.orgfname+'/'+fname;
+              zip.file(fpath, data.substr(data.indexOf(',') + 1), {base64: true});
+              resolve(null);
+          };
+          img.src = url;
+          */
+          let waitFrame = function(){
+            let p = new Promise(resolve=>{
+              // wait for at least one paint.
+              window.requestAnimationFrame(()=>{
+                // then another 100ms
+                setTimeout(resolve, 100);
+              }); 
+            });
+            return p;
+          }
+
+          await waitFrame();
+
+          // Draw the video frame scaled to element size
+          ctx.drawImage(vid, 0, 0, w, h);
+          let data = canvas.toDataURL("image/png");
+          let fname = offset + ".png";
+          imageNames[offset] = fname;
+          let fpath = 'images/'+this.orgfname+'/'+fname;
+          zip.file(fpath, data.substr(data.indexOf(',') + 1), {base64: true});
+          resolve(null);
+        });
+      };
+
+
+      // render all the time we are interested in (all the begins, NOT the ends)
+      for (let i = 0; i < this.intimes.length; i++){
+        await render_one(this.intimes[i]);
+      }
+
+      if (this.descnamebase && this.descnamebase.toLowerCase() !== this.filename.toLowerCase()){
+        window.alert(`Description file name (${this.descnamebase.toLowerCase()}.md) and Rosetta file name (${this.filename.toLowerCase()}.imscr) mismatch - descriptions will be cleared`);
+        this.descriptions = {};  
+        this.descfile = '';
+        this.descnamebase = '';
+      }
+
+      this.descriptions = this.descriptions || {};
+      if (this.descriptions){
+        let descrpath = this.orgfname+'.md';
+        let descrpathhtml =  'html/'+this.orgfname+'.html';
+        let imagesfolder = 'images/'+this.orgfname+'/';
+
+        let html = `<!doctype html>\n<html>\n  <head>\n    <title>${this.orgfname}</title>\n  </head>\n  <body>\n`;
+        let md = `# Sample file ${this.orgfname}\n\n`;
+
+        if (this.descriptions['outline']){
+            md+= this.descriptions['outline'];
+            md+= '\n\n';
+            html += `    <h2>Generated by <a href="https://github.com/imsc-rosetta/imsc-rosetta-qualify" target="_blank">imsc-rosetta-qualify</a> by <b>simon@yellaumbrella.tv</b></h2>\n`;
+            html += `    <p>${this.HtmlCR(this.descriptions['outline'])}</p>\n`;
+        }
+
+        html += `    <p><a href="./imscr/${this.orgfname}">Download ${this.orgfname}</a></p>\n`;
+
+        md+= `## Complete file (click expand to see all) [download](./imscr/${this.orgfname})\n\n`;
+        let xml = this.xml;
+        md += `<details><summary>Expand: ${this.orgfname}</summary>\n\n`;
+        md += '```\n' + xml + '\n```\n\n</details>\n\n';
+        md += '## Divs with images:\n\n';
+
+        html += `    <h3>Divs with images:</h3>\n`;
+
+        for (let i = 0; i < this.divs.length; i++){
+          let div = this.parseddivs[i];
+          if (!div.$ || !div.$.begin){
+            console.log('no begin in div '+i);
+            continue;
+          }
+          
+          let t = div.$.begin;
+          let id = div.$['xml:id'];
+          let hms = t.split(':');
+          let s = (+hms[0]) * 3600 + (+hms[1])*60 + (+hms[2]);
+          let image;
+          if (imageNames[s]){
+            image = imagesfolder + imageNames[s];
+          } else {
+            console.error('missing image ',s)
+          }
+          let xml = this.divs[i];
+          
+          html += `    <h4>subtitle ${id} at begin=${t}</h4>\n`;
+          md += `\n\n### subtitle ${id} at begin=${t}\n\n`;
+          if (this.descriptions[id]){
+            md += this.descriptions[id] + '\n\n';
+            html += `    <p>${this.HtmlCR(this.descriptions[id])}</p>\n`;
+          }
+          if (this.descriptions[t]){
+            md += this.descriptions[t] + '\n\n';
+            html += `    <p>${this.HtmlCR(this.descriptions[t])}</p>\n`;
+          }
+          
+          html += `    <p>div XML<br /><pre>  ${this.escapeHtml(xml)}</pre></p>\n`;
+          md += '#### div XML\n\n```\n  ' + xml + '\n```\n';
+          if (image){
+            md += `#### Resulting Image\n`;
+            md += `\n<img src="./${image}" width="600"/>\n`;
+            html += `    <img src="../${image}" width="600"/>\n`;
+          }
+        }
+        md += '\n\n';
+
+        html += '  </body>\n</html>\n';
+
+        // add the .ismcr.md file in the root.
+        zip.file(descrpath, md);
+        // add the .ismcr.html file in the root.
+        zip.file(descrpathhtml, html);
+      }
+
+      // finally add the sample itself in the /imscr folder.
+      zip.file('imscr/'+this.orgfname, this.xml);
+      if (this.descfile){
+        // with the descriptive file if present.
+        zip.file('imscr/'+this.descnamebase+'.descr.md', this.descfile);
+      }
+
+      this.vdiv.innerHTML = "";
+      this.vdiv.classList.remove('render2');
+      this.vdiv.classList.add('render');
+
+      this.timeindex = 0;
+
+      let content = await zip.generateAsync({type: "blob"});
+      var fname = this.filename;
+      saveAs(content, fname + ".zip");
+
+      setTimeout(() => {
+        this.timeindex = 1;
+        this.vdiv.hidden = false;
+        stream.getTracks().forEach(track => track.stop());
+        stream = null;
+      }, 2000);
+    },
+
+
+
     // add an .descr.md file which describes the imscr
     adddescrfile(file, descriptions){
       this.descfile = descriptions;
@@ -416,8 +674,14 @@ module.exports = {
 <style scoped>
 .render {
   border: 1px solid black;
-  height: 480px;
-  width: 854px;
+  height: 540px;
+  width: 960px;
+  background-color: darkgray;
+}
+.render2 {
+  border: 1px solid black;
+  height: 540px;
+  width: 960px;
   background-color: darkgray;
 }
 .xml {

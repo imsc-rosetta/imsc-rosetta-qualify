@@ -75,7 +75,7 @@
           >IMSC-Rosetta</a
         >
         by Simon Hailes at
-        <a href="https://yellaumbrella.tv" target="_blank">YellaUmbrella</a>
+        <a href="https://www.yellaumbrella.com" target="_blank">YellaUmbrella</a>
       </p>
       <p>
         This app is a pure javascript application written in VueJS using SFC

@@ -22,28 +22,30 @@
       @dragover="dragOverHandler($event)"
     >
       <div class="droptext center">
-        <p>Drop .imscr File Here<br/>and optionally .descr.md file</p>
-        <p>{{ xmlfilename }}</p>
-        <p>{{ descfilename }}</p>
+        <p>Drop .imscr File Here - and optionally .descr.md file</p>
+        <p><span>{{ xmlfilename }}</span> - <span>{{ descfilename }}</span></p>
       </div>
     </div>
     <!-- Tab links -->
-    <div class="tab" :style="fileLoaded? null : 'display:none'">
+    <div class="tab">
       <button
         :class="'tablinks ' + Qualifyclass"
         @click="open($event, 'Qualify')"
+         :style="fileLoaded? null : 'display:none'"
       >
         Qualify File
       </button>
       <button
         :class="'tablinks ' + Renderclass"
         @click="open($event, 'Render')"
+        :style="fileLoaded? null : 'display:none'"
       >
         Legacy Render File
       </button>
       <button
         :class="'tablinks ' + RenderPatchedclass"
         @click="open($event, 'RenderPatched')"
+        :style="fileLoaded? null : 'display:none'"
       >
         Patched Render File
       </button>

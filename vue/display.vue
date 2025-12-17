@@ -15,17 +15,41 @@
  */
 
 <template>
-  <div>
-    <h2>Logs</h2>
-    <div id="results" class="result"></div>
-    <h2>Original XML</h2>
-    <div id="xml" class="xml"></div>
-    <h2>Full Parse JSON</h2>
-    <div id="jsonfull" class="json"></div>
-    <h2>Simple Parse JSON</h2>
-    <div id="json" class="json"></div>
-    <h2>XML round trip from Simple Parse JSON</h2>
-    <div id="round" class="xml"></div>
+  <div class="qtabs">
+
+    <div class="qtab-buttons">
+      <button class="qtab active" data-tab="logs">Logs</button>
+      <button class="qtab" data-tab="xml">Original XML</button>
+      <button class="qtab" data-tab="jsonfull">Full Parse JSON</button>
+      <button class="qtab" data-tab="json">Simple Parse JSON</button>
+      <button class="qtab" data-tab="round">XML Round Trip</button>
+    </div>
+
+    <div class="qtab-content active" id="logs">
+      <h2>Logs</h2>
+      <div id="results" class="result"></div>
+    </div>
+
+    <div class="qtab-content" id="xml">
+      <h2>Original XML</h2>
+      <div class="xml"></div>
+    </div>
+
+    <div class="qtab-content" id="jsonfull">
+      <h2>Full Parse JSON</h2>
+      <div class="json"></div>
+    </div>
+
+    <div class="qtab-content" id="json">
+      <h2>Simple Parse JSON</h2>
+      <div class="json"></div>
+    </div>
+
+    <div class="qtab-content" id="round">
+      <h2>XML round trip from Simple Parse JSON</h2>
+      <div class="xml"></div>
+    </div>
+
   </div>
 </template>
 
@@ -71,6 +95,7 @@ module.exports = {
           "tts:fontFamily": "proportionalSansSerif",
           style: "_r_default",
           _always: true,
+          _nochanges: true,
         },
         r_vertical: {
           "xml:id": "r_vertical",
@@ -98,6 +123,10 @@ module.exports = {
           "xml:id": "d_drop",
           "style": "s_dropblack",
         },
+        d_none: {
+          "xml:id": "d_none",
+          "style": "s_noneblack",
+        },
 
         p_rtl: {
           "xml:id": "p_rtl",
@@ -119,10 +148,6 @@ module.exports = {
           "ebutts:multiRowAlign": "end",
           "tts:textAlign": "end",
         },
-        /*p_al_center: {
-            "xml:id": "p_al_center",
-            "tts:textAlign": "center",
-          },*/
         p_al_start_center: {
           "xml:id": "p_al_start_center",
           "ebutts:multiRowAlign": "center",
@@ -334,27 +359,35 @@ module.exports = {
 
         s_noneblack: {
           "xml:id": "s_noneblack",
+          _optional:{"tts:textOutline":true},
         },
         s_nonered: {
           "xml:id": "s_nonered",
+          _optional:{"tts:textOutline":true},
         },
         s_noneyellow: {
           "xml:id": "s_noneyellow",
+          _optional:{"tts:textOutline":true},
         },
         s_nonegreen: {
           "xml:id": "s_nonegreen",
+          _optional:{"tts:textOutline":true},
         },
         s_nonecyan: {
           "xml:id": "s_nonecyan",
+          _optional:{"tts:textOutline":true},
         },
         s_noneblue: {
           "xml:id": "s_noneblue",
+          _optional:{"tts:textOutline":true},
         },
         s_nonemagenta: {
           "xml:id": "s_nonemagenta",
+          _optional:{"tts:textOutline":true},
         },
         s_nonewhite: {
           "xml:id": "s_nonewhite",
+          _optional:{"tts:textOutline":true},
         },
 
         s_inline_block: {
@@ -579,9 +612,9 @@ module.exports = {
               if (s.startsWith("s_fg_")) {splt.pop(); colour++};
               if (s.startsWith("p_al_")) {splt.pop(); al++};
             }
-            if (splt.length) return false;
-            if (colour !== 1) return false;
-            if (al !== 1) return false;
+            if (colour !== 1) return `missing or multiple foreground colours`;
+            if (al !== 1) return `missing or multiple p_al_xxx`;
+            if (splt.length) return `not allowed style(s) ${splt.join(', ')}`;
             return true; 
           } },
           _always: true,
@@ -880,7 +913,12 @@ module.exports = {
 
         //rootElement = builder.create(rootName, this.options.xmldec, this.options.doctype, this.options);
 
-        rootElement = builder.create(rootName);
+        rootElement = builder.create(rootName,{
+          version: '1.0',
+          encoding: 'UTF-8',
+          standalone: true,
+        });
+        
         let inP = 0;
         let addlevel = 0;
 
@@ -951,7 +989,7 @@ module.exports = {
       jsonel.innerHTML = ``;
       let jsonelfull = document.getElementById("jsonfull");
       jsonelfull.innerHTML = ``;
-      let resultsel = document.getElementById("results");
+      let resultsel = document.getElementById("logs");
       resultsel.innerHTML = ``;
       let roundel = document.getElementById("round");
       roundel.innerHTML = ``;
@@ -1020,7 +1058,7 @@ module.exports = {
         this.showinel("jsonfull", json);
       } catch(err){
         // Failed
-        let resultsel = document.getElementById("results");
+        let resultsel = document.getElementById("logs");
         resultsel.innerHTML =
           resultsel.innerHTML +
           `<p class="error">Error in Full Parsing: ${err.toString()}</p>`;
@@ -1051,11 +1089,11 @@ module.exports = {
         this.processJson(file, result);
         this.output += this.timestamp("End Export");
 
-        let resultsel = document.getElementById("results");
+        let resultsel = document.getElementById("logs");
         resultsel.innerHTML = resultsel.innerHTML + this.output;
       } catch(err){
         // Failed
-        let resultsel = document.getElementById("results");
+        let resultsel = document.getElementById("logs");
         resultsel.innerHTML =
           resultsel.innerHTML +
           `<p class="error">Error in Simple Parsing: ${err.toString()}</p>`;
@@ -1132,7 +1170,7 @@ module.exports = {
     },
 
     testImscRosettaSpaces(file, xml, json) {
-      let resultsel = document.getElementById("results");
+      let resultsel = document.getElementById("logs");
 
       let html = "";
 
@@ -1176,7 +1214,7 @@ module.exports = {
       resultsel.innerHTML = resultsel.innerHTML + html;
     },
 
-    checkstyle(styles, style, eltype, stack) {
+    checkstyle(styles, style, eltype, stack, parents) {
       style = style || "";
       let s = style.split(" ");
       let valid = true;
@@ -1184,7 +1222,7 @@ module.exports = {
       let unknown = '';
       let pass = true;
 
-      if (undefined === stack){
+      if (!stack){
         stack = [];
       }
 
@@ -1236,6 +1274,8 @@ module.exports = {
           if (unknown) unknown += ',';
           unknown += s[i];
         } else {
+          styles[s[i]]._use = (styles[s[i]]._use || 0) + 1;
+
           switch(eltype){
             case 'region':{
               if (!s[i].startsWith('r_')){
@@ -1245,7 +1285,11 @@ module.exports = {
               }
             } break;
             case 'div':{
-              if (!s[i].startsWith('d_')){
+              let valid = false;
+              if (s[i].startsWith('d_')){
+                valid = true;
+              }
+              if (!valid){
                 if (invalid) invalid += ',';
                 invalid += s[i];
                 continue;
@@ -1264,6 +1308,27 @@ module.exports = {
                 invalid += s[i];
                 continue;
               }
+              if (s[i].startsWith('s_none')){
+                if (!parents.includes('d_none')){
+                  if (invalid) invalid += ',';
+                  invalid += s[i]+' without d_none';
+                  continue;
+                }
+              }
+              if (s[i].startsWith('s_outline')){
+                if (!parents.includes('d_outline')){
+                  if (invalid) invalid += ',';
+                  invalid += s[i]+' without d_outline';
+                  continue;
+                }
+              }
+              if (s[i].startsWith('s_drop')){
+                if (!parents.includes('d_drop')){
+                  if (invalid) invalid += ',';
+                  invalid += s[i]+' without d_drop';
+                  continue;
+                }
+              }
             } break;
             case 'span_ruby':{
               if (!s[i].startsWith('s_') && !s[i].startsWith('ps_')){
@@ -1275,7 +1340,6 @@ module.exports = {
             default:
               break;
           }
-          styles[s[i]]._use = (styles[s[i]]._use || 0) + 1;
           if (styles[s[i]].style) {
             stack.push(s[i]);
             let childinvalid = this.checkstyle(styles, styles[s[i]].style, null, stack);
@@ -1292,6 +1356,27 @@ module.exports = {
           }
         }
       }
+
+      switch(eltype){
+        case 'p':{
+          let align = '';
+          // stack is region + div styles in this case
+          for (let i = 0; i < parents.length; i++){
+            if (parents[i].startsWith('p_al_')){
+              align = parents[i];
+            }
+          }
+          for (let i = 0; i < s.length; i++){
+            if (s[i].startsWith('p_al_')){
+              align = s[i];
+            }
+          }
+          if (!align){
+            invalid += 'missing default or explicit alignment on p';
+          }
+        } break;
+      }
+
       if (invalid || unknown) pass = false;
       return {invalid, unknown, pass};
     },
@@ -1463,7 +1548,7 @@ module.exports = {
     }, 
 
     testImscRosetta(file, xml, json) {
-      let resultsel = document.getElementById("results");
+      let resultsel = document.getElementById("logs");
 
       let html = "";
       let pass = true;
@@ -1588,9 +1673,9 @@ module.exports = {
                   }
                 }
               }
-              html += `<p class="info">styles found<br />:${Object.keys(
+              html += `<p class="info">styles found:<br />${Object.keys(
                 styles
-              ).toString()}</p>`;
+              ).join(', ')}</p>`;
             }
 
             // check referential styles
@@ -1668,9 +1753,9 @@ module.exports = {
                   }
                 }
               }
-              html += `<p class="info">regions found<br />:${Object.keys(
+              html += `<p class="info">regions found:<br />${Object.keys(
                 regions
-              ).toString()}</p>`;
+              ).join(', ')}</p>`;
             }
           }
         }
@@ -1751,10 +1836,21 @@ module.exports = {
                   regions[a.region]._use = (regions[a.region]._use || 0) + 1;
                 }
               }
+
+              // assume ALL regions have r_default.
+              let divstyles = ['r_default'];
               if (!a.style)
                 html += `<p class="warn">missing style on div ${id}</p>`;
               else {
                 let invalid = this.checkstyle(styles, a.style, 'div');
+                divstyles = [...divstyles, ...a.style.split(' ')];
+                for (let i = 0; i < divstyles.length; i++){
+                  if (styles[divstyles[i]] && styles[divstyles[i]].style){
+                    let s = styles[divstyles[i]].style.split(' ');
+                    // append all refered styles to divstyles.  we need to know if d_oiutlinew is in _d_default, for example
+                    divstyles = [...divstyles, ...s];
+                  }
+                }
                 pass &= invalid.pass;
                 if (invalid.unknown){
                   html += `<p class="error">unknown style (${
@@ -1782,7 +1878,7 @@ module.exports = {
                   if (!pa.style)
                     html += `<p class="error">missing style on p in div ${id}</p>`;
                   else {
-                    let invalid = this.checkstyle(styles, pa.style, 'p');
+                    let invalid = this.checkstyle(styles, pa.style, 'p', null, divstyles);
                     pass &= invalid.pass;
                     if (invalid.unknown){
                       html += `<p class="error">unknown style (${
@@ -1800,7 +1896,7 @@ module.exports = {
                   html += `<p class="error">p contains text in div ${id}</p>`;
 
                 if (p.br)
-                  html += `<p class="error">p contains br - br ahouls be wrapped in a span - in div ${id}</p>`;
+                  html += `<p class="error">p contains br - br should be wrapped in a span - in div ${id}</p>`;
 
                 if (!p.span || !p.span.length) {
                   html += `<p class="warn">p contains no spans in div ${id}</p>`;
@@ -1814,7 +1910,7 @@ module.exports = {
                       if (!as1.style)
                         html += `<p class="error">empty style in span on div ${id}</p>`;
                       else {
-                        let invalid = this.checkstyle(styles, as1.style, 'span');
+                        let invalid = this.checkstyle(styles, as1.style, 'span', null, divstyles);
                         if (invalid.unknown){
                           html += `<p class="error">unknown style (${
                             invalid.unknown
@@ -1911,7 +2007,7 @@ module.exports = {
             xmlidobj2[xmlids[i]] = true;
           }
 
-          html += `<p class="info">divs found<br />:${divs.toString()}</p>`;
+          html += `<p class="info">divs found:<br />${divs.join(', ')}</p>`;
         }
 
         html += '<p class="info">Analysing Styles</p>';
@@ -1965,7 +2061,9 @@ module.exports = {
         }
 
         let checkextras = true;
+        let styleDefn;
         if (this.defaultConstantStyles[n]) {
+          styleDefn = this.defaultConstantStyles[n];
           let keys1 = Object.keys(s);
           let keys2 = Object.keys(this.defaultConstantStyles[n]);
           for (let i = 0; i < keys2.length; i++) {
@@ -1976,7 +2074,7 @@ module.exports = {
                 }="${this.defaultConstantStyles[n][keys2[i]]}"</p>`;
                 pass = false;
               } else {
-                if (!this.canChangeStyleAttribute[keys2[i]]){
+                if (!this.canChangeStyleAttribute[keys2[i]] || this.defaultConstantStyles[n]._nochanges){
                   if (this.defaultConstantStyles[n][keys2[i]] !== s[keys2[i]]) {
                     html +=
                       `<p class="error">incorrect attribute on style ${n} :  - should be ` +
@@ -1986,8 +2084,9 @@ module.exports = {
                     pass = false;
                   }
                 } else {
-                  if (!this.canChangeStyleAttribute[keys2[i]].test(s[keys2[i]])){
-                    html += `<p class="error">invalid attribute on style ${n}: value ${keys2[i]}="${s[keys2[i]]}"</p>`;
+                  let err = this.canChangeStyleAttribute[keys2[i]].test(s[keys2[i]]);
+                  if (err !== true){
+                    html += `<p class="error">invalid attribute on style ${n}: value [${keys2[i]}="${s[keys2[i]]}"] because ${err}</p>`;
                     pass = false;
                   }
                 }
@@ -1997,6 +2096,7 @@ module.exports = {
           }
         } else {
           if (this.defaultChangeableStyles[n]) {
+            styleDefn = this.defaultChangeableStyles[n];
             let keys1 = Object.keys(s);
             let keys2 = Object.keys(this.defaultChangeableStyles[n]);
             for (let i = 0; i < keys2.length; i++) {
@@ -2018,12 +2118,13 @@ module.exports = {
                 } else {
                   //attribute is present
                   if (this.defaultChangeableStyles[n][keys2[i]].test){
-                    if (!this.defaultChangeableStyles[n][keys2[i]].test(s[keys2[i]])){
+                    let err = this.defaultChangeableStyles[n][keys2[i]].test(s[keys2[i]]);
+                    if (err !== true){
                       if (this.defaultChangeableStyles[n][keys2[i]].required){
-                        html += `<p class="error">required attribute ${keys2[i]} on changeable style ${n}: value ${s[keys2[i]]} is not valid</p>`;
+                        html += `<p class="error">required attribute ${keys2[i]} on changeable style ${n}: value [${s[keys2[i]]}] is not valid because ${err}</p>`;
                         pass = false;
                       } else {
-                        html += `<p class="error">optional attribute ${keys2[i]} on changeable style ${n}: value ${s[keys2[i]]} is not valid</p>`;
+                        html += `<p class="error">optional attribute ${keys2[i]} on changeable style ${n}: value [${s[keys2[i]]}] is not valid because ${err}</p>`;
                         pass = false;
                       }
                     }
@@ -2044,11 +2145,16 @@ module.exports = {
           let keys2 = Object.keys(s);
           for (let i = 0; i < keys2.length; i++) {
             if (!keys2[i].startsWith("_")) {
-              html += `<p class="error">extra attribute on style ${n} : ${
-                keys2[i]
-              }="${s[keys2[i]]}"</p>`;
-              delete s[keys2[i]];
-              pass = false;
+              if (styleDefn && styleDefn._optional && styleDefn._optional[keys2[i]]){
+                // if this is an allowed optional for this style,  then no issue
+                console.log(`allowed optional ${keys2[i]} on ${n}`);
+              } else {
+                html += `<p class="error">extra attribute on style ${n} : ${
+                  keys2[i]
+                }="${s[keys2[i]]}"</p>`;
+                delete s[keys2[i]];
+                pass = false;
+              }
             }
           }
         }
@@ -2221,6 +2327,22 @@ module.exports = {
       return true;
     };
 
+    document.querySelectorAll('.qtab').forEach(button => {
+      button.addEventListener('click', () => {
+        const target = button.dataset.tab;
+
+        document.querySelectorAll('.qtab').forEach(b =>
+          b.classList.remove('active')
+        );
+        document.querySelectorAll('.qtab-content').forEach(c =>
+          c.classList.remove('active')
+        );
+
+        button.classList.add('active');
+        document.getElementById(target).classList.add('active');
+      });
+    });    
+
   },
   destroyed() {
     clearInterval(this.interval);
@@ -2269,4 +2391,38 @@ h2 {
   padding: 0;
   margin: 0;
 }
+
+
+/* tab stuff */
+.qtabs {
+  font-family: sans-serif;
+}
+
+.qtab-buttons {
+  display: flex;
+  border-bottom: 1px solid #ccc;
+}
+
+.qtab-buttons .qtab {
+  padding: 0.5em 1em;
+  border: none;
+  background: #eee;
+  cursor: pointer;
+}
+
+.qtab-buttons .qtab.active {
+  background: #fff;
+  border-bottom: 2px solid #007acc;
+  font-weight: bold;
+}
+
+.qtab-content {
+  display: none;
+  padding: 1em;
+}
+
+.qtab-content.active {
+  display: block;
+}
+
 </style>

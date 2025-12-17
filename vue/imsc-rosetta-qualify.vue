@@ -22,8 +22,8 @@
       @dragover="dragOverHandler($event)"
     >
       <div class="droptext center">
-        <p>Drop .imscr File Here</p>
-        <p>{{ xmlfilename }}</p>
+        <p>Drop .imscr File Here - and optionally .descr.md file</p>
+        <p><span>{{ xmlfilename }}</span> - <span>{{ descfilename }}</span></p>
       </div>
     </div>
     <!-- Tab links -->
@@ -31,18 +31,21 @@
       <button
         :class="'tablinks ' + Qualifyclass"
         @click="open($event, 'Qualify')"
+         :style="fileLoaded? null : 'display:none'"
       >
         Qualify File
       </button>
       <button
         :class="'tablinks ' + Renderclass"
         @click="open($event, 'Render')"
+        :style="fileLoaded? null : 'display:none'"
       >
         Legacy Render File
       </button>
       <button
         :class="'tablinks ' + RenderPatchedclass"
         @click="open($event, 'RenderPatched')"
+        :style="fileLoaded? null : 'display:none'"
       >
         Patched Render File
       </button>
@@ -68,11 +71,11 @@
       <h3>About</h3>
       <p>
         A simple web app to qualify
-        <a href="https://github.com/imsc-rosetta" target="_blank"
+        <a href="https://github.com/imsc-rosetta/imsc-rosetta-specification" target="_blank"
           >IMSC-Rosetta</a
         >
         by Simon Hailes at
-        <a href="https://yellaumbrella.tv" target="_blank">YellaUmbrella</a>
+        <a href="https://www.yellaumbrella.com" target="_blank">YellaUmbrella</a>
       </p>
       <p>
         This app is a pure javascript application written in VueJS using SFC
@@ -100,6 +103,12 @@
         <a href="https://github.com/sandflow/imscJS" target="_blank">imscJS</a>,
         Pierre's very competent and comprehensive IMSC renderer.
       </p>
+      <p>Instructions:<br/>Drag and drop an IMSCR file ontp the blue box at the top.  The application will check the file for IMSCR complience, and report abnormalities.  You can also view a file (indeed, most IMSC files will render correctly, even if not IMSCR), and generate a set of images representing that file along with an HTML referencing those images, and a .md file referencing those images.</p>
+      <p>See
+       <a href="https://github.com/imsc-rosetta/imsc-rosetta-qualify" target="_blank">the github source</a>
+       if you are so inclined.
+      </p>
+      <p>© Simon Hailes, YellaUmbrella, 17/12/2025</p>
     </div>
   </div>
 </template>
@@ -116,12 +125,14 @@ module.exports = {
       msg: "world!",
       color: "blue",
       logs: "",
-      tab: "Qualify",
+      tab: "",
       Renderclass: "",
       RenderPatchedclass: "",
       Qualifyclass: "active", // default to this tab
       Aboutclass: "",
       xmlfilename: "none",
+      descfilename: "none",
+      fileLoaded: false,
     };
   },
   methods: {
@@ -210,7 +221,9 @@ module.exports = {
                     this.xmlfilename = `${file.name} - ${event.target.result.length} characters`;
                     this.renderPatched.processXml(file, event.target.result, parsed);
                   }
-                  
+
+                  this.fileLoaded = true;
+                  if (!this.tab) this.tab = 'Qualify';
                 };
                 //console.log(file);
                 reader.readAsText(file);
@@ -227,9 +240,11 @@ module.exports = {
                       console.log('read description file',event.target.result);
 
                       if (this.render && this.render.adddescrfile) {
+                        this.descfilename = `${file.name} - ${event.target.result.length} characters`;
                         this.render.adddescrfile(file, event.target.result)
                       }
                       if (this.renderPatched && this.renderPatched.adddescrfile) {
+                        this.descfilename = `${file.name} - ${event.target.result.length} characters`;
                         this.renderPatched.adddescrfile(file, event.target.result)
                       }
                     }

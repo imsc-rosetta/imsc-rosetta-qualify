@@ -22,12 +22,13 @@
       @dragover="dragOverHandler($event)"
     >
       <div class="droptext center">
-        <p>Drop .imscr File Here</p>
+        <p>Drop .imscr File Here<br/>and optionally .descr.md file</p>
         <p>{{ xmlfilename }}</p>
+        <p>{{ descfilename }}</p>
       </div>
     </div>
     <!-- Tab links -->
-    <div class="tab">
+    <div class="tab" :style="fileLoaded? null : 'display:none'">
       <button
         :class="'tablinks ' + Qualifyclass"
         @click="open($event, 'Qualify')"
@@ -116,12 +117,14 @@ module.exports = {
       msg: "world!",
       color: "blue",
       logs: "",
-      tab: "Qualify",
+      tab: "",
       Renderclass: "",
       RenderPatchedclass: "",
       Qualifyclass: "active", // default to this tab
       Aboutclass: "",
       xmlfilename: "none",
+      descfilename: "none",
+      fileLoaded: false,
     };
   },
   methods: {
@@ -210,7 +213,9 @@ module.exports = {
                     this.xmlfilename = `${file.name} - ${event.target.result.length} characters`;
                     this.renderPatched.processXml(file, event.target.result, parsed);
                   }
-                  
+
+                  this.fileLoaded = true;
+                  if (!this.tab) this.tab = 'Qualify';
                 };
                 //console.log(file);
                 reader.readAsText(file);
@@ -227,9 +232,11 @@ module.exports = {
                       console.log('read description file',event.target.result);
 
                       if (this.render && this.render.adddescrfile) {
+                        this.descfilename = `${file.name} - ${event.target.result.length} characters`;
                         this.render.adddescrfile(file, event.target.result)
                       }
                       if (this.renderPatched && this.renderPatched.adddescrfile) {
+                        this.descfilename = `${file.name} - ${event.target.result.length} characters`;
                         this.renderPatched.adddescrfile(file, event.target.result)
                       }
                     }

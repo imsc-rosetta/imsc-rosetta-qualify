@@ -17,13 +17,31 @@
 
 <template>
   <div>
-    <div class="render" :id="renderId" style="isolation: isolate;"></div>
-    <p>ISDs generated: {{ tmax }} <button @click="saveAsPNG();">Generate a zip of images using SVG - some features noty supported</button></p>
+    <div class="render-outer" :id="renderOuterId">
+      <div class="background" :id="backgroundId">
+        <div style="position:absolute; top:50%; height:1px; left:0; width:100%; background-color: red;"></div>
+        <div style="position:absolute; top:50%; height:1px; left:0; width:100%; background-color: red;"></div>
+      </div>
+      <div class="render" :id="renderId">
+      </div>
+    </div>
+    <p>ISDs generated: {{ tmax }} <button @click="saveAsPNG();">Generate a zip of images using SVG - some features not supported</button></p>
     <p>ISDs generated: {{ tmax }} <button @click="saveAsPNG2();">Generate a zip of images - using screen capture - more accurate (Chrome/Edge only)</button></p>
+    <p>
+      <label for="bg">Choose a background:</label>
+      <select name="bg" :id="bgId" @change="drawBackground(this)">
+        <option value="grey">Grey</option>
+        <option value="black">Black</option>
+        <option value="white">White</option>
+        <option value="gradient">Gradient</option>
+        <option value="grid">Gradient Grid</option>
+        <option value="bars" selected>SMPTE bars</option>
+      </select>
+    </p>
     <div>
       <span>{{ selectedTime }} </span><span>Rendered using: {{imscVersion}}</span><input type="range" min="0" v-bind:max="tmax" v-model="timeindex" />
     </div>
-    <video id="video" autoplay playsinline style="/*left:1000%; top:1000%;*/"></video>
+    <video class="video" id="video" autoplay playsinline style="/*left:1000%; top:1000%;*/"></video>
     <div class="xml"><p v-html="descrDisplay"></p><pre v-html="xmlDisplay"></pre></div>
   </div>
 
@@ -39,12 +57,16 @@ module.exports = {
       descrDisplay: '',
       selectedTime: "xx:xx:xx:xxx",
       renderId:'render',
+      renderOuterId:'renderouter',
+      backgroundId:'background',
+      bgId:'bg',
       imscVersion: 'https://unpkg.com/imsc@1.1.0-beta.2/build/umd/imsc.all.min.js',
     };
   },
   watch: {
     timeindex(newt, oldt) {
       this.vdiv = document.getElementById(this.renderId);
+      this.outerdiv =  document.getElementById(this.renderOuterId);
       if (this.vdiv) {
         let isd = this.imsc.generateISD(this.doc, this.t[newt]);
         if (isd.contents.length) {
@@ -84,7 +106,90 @@ module.exports = {
     init(options){
       this.imsc = options.imsc;
       this.renderId = options.name+'-div';
+      this.renderOuterId = options.name+'-outer';
+      this.backgroundId = options.name+'-bg';
+      this.bgId = options.name+'-bgchoice';
       this.imscVersion = options.version;
+    },
+
+    drawBackground(){
+      this.bdiv = document.getElementById(this.backgroundId);
+      let select = document.getElementById(this.bgId);
+      let type = select.value;
+
+      let html = '';
+      switch (type){
+        case 'grey':
+          this.bdiv.style.background = "";
+          this.bdiv.style.backgroundColor = "darkgrey";
+          html = '';
+          break;
+
+        case 'black':
+          this.bdiv.style.background = "";
+          this.bdiv.style.backgroundColor = "black";
+          html = '';
+          break;
+
+        case 'white':
+          this.bdiv.style.background = "";
+          this.bdiv.style.backgroundColor = "white";
+          html = '';
+          break;
+
+        case 'gradient':
+          this.bdiv.style.background = "linear-gradient(135deg, #b5bdc8 0%,#828c95 36%,#28343b 100%)";
+          this.bdiv.style.backgroundColor = "black";
+          html = '';
+          break;
+
+        case 'grid':{
+          for (let x = 10; x < 100; x+= 10){
+            html += `<div style="position:absolute; top:0%; height:100%; left:${x}%; width:1px; background-color: red;"></div>`
+          }
+          for (let y = 10; y < 100; y+= 10){
+            html += `<div style="position:absolute; top:${y}%; height:1px; left:0%; width:100%; background-color: red;"></div>`
+          }
+          this.bdiv.style.background = "linear-gradient(135deg, #b5bdc8 0%,#828c95 36%,#28343b 100%)";
+          this.bdiv.style.backgroundColor = "black";
+        } break;
+
+        case 'bars':{
+          this.bdiv.style.background = '';
+          this.bdiv.style.backgroundColor = "black";
+          html = 
+`<div class="smpte">
+  <!-- Top bars -->
+  <div class="top white"></div>
+  <div class="top yellow"></div>
+  <div class="top cyan"></div>
+  <div class="top green"></div>
+  <div class="top magenta"></div>
+  <div class="top red"></div>
+  <div class="top blue"></div>
+
+  <!-- Middle bars -->
+  <div class="mid blue"></div>
+  <div class="mid black"></div>
+  <div class="mid magenta"></div>
+  <div class="mid black"></div>
+  <div class="mid cyan"></div>
+  <div class="mid black"></div>
+  <div class="mid white"></div>
+
+  <!-- Bottom bars -->
+  <div class="bot darkblue"></div>
+  <div class="bot white"></div>
+  <div class="bot purple"></div>
+  <div class="bot black"></div>
+  <div class="bot pluge-black"></div>
+  <div class="bot pluge-gray"></div>
+  <div class="bot pluge-white"></div>
+</div>`          
+        } break;
+      }
+
+      this.bdiv.innerHTML = html;
     },
 
     toHtmlEntities(txt) {
@@ -109,6 +214,9 @@ module.exports = {
     },*/
 
     processXml(file, xml, parsed) {
+      //this.drawBackground('grid');
+      this.drawBackground('bars');
+
       //console.log("would render");
       this.filename = file.name;
       this.orgfname = file.name;
@@ -430,12 +538,17 @@ module.exports = {
       const stream = await navigator.mediaDevices.getDisplayMedia(constraints);
       const track = stream.getVideoTracks()[0];
 
-      this.vdiv.style.width = ''+exp_width+'px';
+      this.outerdiv.style.width = ''+exp_width+'px';
+      this.outerdiv.style.height = ''+exp_height+'px';
+      this.outerdiv.width = w;
+      this.outerdiv.height = h;
+
+/*      this.vdiv.style.width = ''+exp_width+'px';
       this.vdiv.style.height = ''+exp_height+'px';
       this.vdiv.width = w;
-      this.vdiv.height = h;
+      this.vdiv.height = h;*/
 
-      const restrictionTarget = await RestrictionTarget.fromElement(this.vdiv);
+      const restrictionTarget = await RestrictionTarget.fromElement(this.outerdiv);
 
       console.log(restrictionTarget);
       await track.restrictTo(restrictionTarget);
@@ -672,17 +785,35 @@ module.exports = {
 </script>
 
 <style scoped>
-.render {
+.render-outer{
+  isolation: isolate;
+  position: relative;
   border: 1px solid black;
   height: 540px;
   width: 960px;
-  background-color: darkgray;
+}
+.background{
+  position: absolute;
+  background-color: darkgrey;
+  height: 100%;
+  width: 100%;
+}
+.render {
+  background-color: transparent;
+  position: absolute;
+  height: 100%;
+  width: 100%;
 }
 .render2 {
-  border: 1px solid black;
-  height: 540px;
-  width: 960px;
-  background-color: darkgray;
+  background-color: transparent;
+  position: absolute;
+  height: 100%;
+  width: 100%;
+}
+.video {
+  position: absolute;
+  left:-1000px;
+  top: -1000px;
 }
 .xml {
   max-height: 25vh;
@@ -692,4 +823,69 @@ module.exports = {
 h2 {
   margin-bottom: 0;
 }
+
+
+/*bars styles*/
+.smpte {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: black;
+  overflow: hidden;
+}
+
+/* ---------- COMMON ---------- */
+.top, .mid, .bot {
+  position: absolute;
+  top: 0;
+  height: 100%;
+}
+
+/* ---------- TOP (67%) ---------- */
+.top {
+  height: 67%;
+  width: calc(100% / 7);
+}
+
+.top:nth-child(1) { left: 0%;    background: #ffffff; }
+.top:nth-child(2) { left: 14.28%; background: #ffff00; }
+.top:nth-child(3) { left: 28.56%; background: #00ffff; }
+.top:nth-child(4) { left: 42.84%; background: #00ff00; }
+.top:nth-child(5) { left: 57.12%; background: #ff00ff; }
+.top:nth-child(6) { left: 71.4%;  background: #ff0000; }
+.top:nth-child(7) { left: 85.68%; background: #0000ff; }
+
+/* ---------- MIDDLE (8%) ---------- */
+.mid {
+  top: 67%;
+  height: 8%;
+  width: calc(100% / 7);
+}
+
+.mid:nth-of-type(8)  { left: 0%;    background: #0000ff; }
+.mid:nth-of-type(9)  { left: 14.28%; background: #000000; }
+.mid:nth-of-type(10) { left: 28.56%; background: #ff00ff; }
+.mid:nth-of-type(11) { left: 42.84%; background: #000000; }
+.mid:nth-of-type(12) { left: 57.12%; background: #00ffff; }
+.mid:nth-of-type(13) { left: 71.4%;  background: #000000; }
+.mid:nth-of-type(14) { left: 85.68%; background: #ffffff; }
+
+/* ---------- BOTTOM (25%) ---------- */
+.bot {
+  top: 75%;
+  height: 25%;
+}
+
+/* left 4 bars */
+.bot:nth-of-type(15) { left: 0%;  width: 20%; background: #00214c; }
+.bot:nth-of-type(16) { left: 20%; width: 20%; background: #ffffff; }
+.bot:nth-of-type(17) { left: 40%; width: 20%; background: #32006a; }
+.bot:nth-of-type(18) { left: 60%; width: 10%; background: #000000; }
+
+/* PLUGE */
+.pluge-black { left: 70%; width: 10%; background: #0a0a0a; }
+.pluge-gray  { left: 80%; width: 10%; background: #1a1a1a; }
+.pluge-white { left: 90%; width: 10%; background: #2a2a2a; }
+
+
 </style>

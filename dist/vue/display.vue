@@ -15,17 +15,41 @@
  */
 
 <template>
-  <div>
-    <h2>Logs</h2>
-    <div id="results" class="result"></div>
-    <h2>Original XML</h2>
-    <div id="xml" class="xml"></div>
-    <h2>Full Parse JSON</h2>
-    <div id="jsonfull" class="json"></div>
-    <h2>Simple Parse JSON</h2>
-    <div id="json" class="json"></div>
-    <h2>XML round trip from Simple Parse JSON</h2>
-    <div id="round" class="xml"></div>
+  <div class="qtabs">
+
+    <div class="qtab-buttons">
+      <button class="qtab active" data-tab="logs">Logs</button>
+      <button class="qtab" data-tab="xml">Original XML</button>
+      <button class="qtab" data-tab="jsonfull">Full Parse JSON</button>
+      <button class="qtab" data-tab="json">Simple Parse JSON</button>
+      <button class="qtab" data-tab="round">XML Round Trip</button>
+    </div>
+
+    <div class="qtab-content active" id="logs">
+      <h2>Logs</h2>
+      <div id="results" class="result"></div>
+    </div>
+
+    <div class="qtab-content" id="xml">
+      <h2>Original XML</h2>
+      <div class="xml"></div>
+    </div>
+
+    <div class="qtab-content" id="jsonfull">
+      <h2>Full Parse JSON</h2>
+      <div class="json"></div>
+    </div>
+
+    <div class="qtab-content" id="json">
+      <h2>Simple Parse JSON</h2>
+      <div class="json"></div>
+    </div>
+
+    <div class="qtab-content" id="round">
+      <h2>XML round trip from Simple Parse JSON</h2>
+      <div class="xml"></div>
+    </div>
+
   </div>
 </template>
 
@@ -880,7 +904,12 @@ module.exports = {
 
         //rootElement = builder.create(rootName, this.options.xmldec, this.options.doctype, this.options);
 
-        rootElement = builder.create(rootName);
+        rootElement = builder.create(rootName,{
+          version: '1.0',
+          encoding: 'UTF-8',
+          standalone: true,
+        });
+        
         let inP = 0;
         let addlevel = 0;
 
@@ -951,7 +980,7 @@ module.exports = {
       jsonel.innerHTML = ``;
       let jsonelfull = document.getElementById("jsonfull");
       jsonelfull.innerHTML = ``;
-      let resultsel = document.getElementById("results");
+      let resultsel = document.getElementById("logs");
       resultsel.innerHTML = ``;
       let roundel = document.getElementById("round");
       roundel.innerHTML = ``;
@@ -1020,7 +1049,7 @@ module.exports = {
         this.showinel("jsonfull", json);
       } catch(err){
         // Failed
-        let resultsel = document.getElementById("results");
+        let resultsel = document.getElementById("logs");
         resultsel.innerHTML =
           resultsel.innerHTML +
           `<p class="error">Error in Full Parsing: ${err.toString()}</p>`;
@@ -1051,11 +1080,11 @@ module.exports = {
         this.processJson(file, result);
         this.output += this.timestamp("End Export");
 
-        let resultsel = document.getElementById("results");
+        let resultsel = document.getElementById("logs");
         resultsel.innerHTML = resultsel.innerHTML + this.output;
       } catch(err){
         // Failed
-        let resultsel = document.getElementById("results");
+        let resultsel = document.getElementById("logs");
         resultsel.innerHTML =
           resultsel.innerHTML +
           `<p class="error">Error in Simple Parsing: ${err.toString()}</p>`;
@@ -1132,7 +1161,7 @@ module.exports = {
     },
 
     testImscRosettaSpaces(file, xml, json) {
-      let resultsel = document.getElementById("results");
+      let resultsel = document.getElementById("logs");
 
       let html = "";
 
@@ -1463,7 +1492,7 @@ module.exports = {
     }, 
 
     testImscRosetta(file, xml, json) {
-      let resultsel = document.getElementById("results");
+      let resultsel = document.getElementById("logs");
 
       let html = "";
       let pass = true;
@@ -2221,6 +2250,22 @@ module.exports = {
       return true;
     };
 
+    document.querySelectorAll('.qtab').forEach(button => {
+      button.addEventListener('click', () => {
+        const target = button.dataset.tab;
+
+        document.querySelectorAll('.qtab').forEach(b =>
+          b.classList.remove('active')
+        );
+        document.querySelectorAll('.qtab-content').forEach(c =>
+          c.classList.remove('active')
+        );
+
+        button.classList.add('active');
+        document.getElementById(target).classList.add('active');
+      });
+    });    
+
   },
   destroyed() {
     clearInterval(this.interval);
@@ -2269,4 +2314,38 @@ h2 {
   padding: 0;
   margin: 0;
 }
+
+
+/* tab stuff */
+.qtabs {
+  font-family: sans-serif;
+}
+
+.qtab-buttons {
+  display: flex;
+  border-bottom: 1px solid #ccc;
+}
+
+.qtab-buttons .qtab {
+  padding: 0.5em 1em;
+  border: none;
+  background: #eee;
+  cursor: pointer;
+}
+
+.qtab-buttons .qtab.active {
+  background: #fff;
+  border-bottom: 2px solid #007acc;
+  font-weight: bold;
+}
+
+.qtab-content {
+  display: none;
+  padding: 1em;
+}
+
+.qtab-content.active {
+  display: block;
+}
+
 </style>
